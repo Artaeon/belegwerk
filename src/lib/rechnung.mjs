@@ -143,7 +143,10 @@ Sie ist im Rechnungsregister des Ausstellers hinterlegt — Rechnung und Registe
 
 /** HTML → A4-PDF. Auch Mahnungen und künftige Dokumente laufen hier durch. */
 export async function pdf(html, pfad) {
-  const browser = await puppeteer.launch({ headless: 'new' });
+  /* In CI-Containern läuft Chromium ohne Kernel-Sandbox — nur dort:
+     Lokal bleibt die Sandbox an, sie ist eine echte Schutzschicht. */
+  const args = process.env.CI ? ['--no-sandbox', '--disable-dev-shm-usage'] : [];
+  const browser = await puppeteer.launch({ headless: 'new', args });
   const page = await browser.newPage();
   await page.emulateMediaType('print');
   await page.setContent(html, { waitUntil: 'networkidle0' });

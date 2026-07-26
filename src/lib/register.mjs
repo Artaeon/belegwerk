@@ -11,7 +11,7 @@
  * aller folgenden. Zusammen mit der Git-Historie des Mandanten-Ordners
  * ergibt das zwei unabhängige Prüfpfade.
  */
-import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, appendFileSync, unlinkSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
 const SEED = 'belegwerk-register-v1';
@@ -30,17 +30,44 @@ export function vertraeglich(pfad, nummer, datenhash) {
   }
 }
 
+/** Die Sperre gegen überlappende Läufe: Zwei gleichzeitige Prozesse —
+ *  etwa ein doppelt angestoßener Timer neben einem Hand-Aufruf — dürfen
+ *  ihre Registerzeilen nicht verschränken, sonst hängen beide Ketten am
+ *  selben Vorgänger. `wx` legt die Sperrdatei atomar an; eine Sperre,
+ *  die älter ist als 60 s, stammt aus einem abgestürzten Lauf und wird
+ *  übernommen — ein Absturz darf das Register nicht für immer sperren. */
+function sperren(pfad) {
+  const lock = `${pfad}.lock`;
+  try {
+    writeFileSync(lock, String(process.pid), { flag: 'wx' });
+    return () => { try { unlinkSync(lock); } catch {} };
+  } catch {
+    let alterMs = 0;
+    try { alterMs = Date.now() - statSync(lock).mtimeMs; } catch { return sperren(pfad); }
+    if (alterMs > 60_000) {
+      try { unlinkSync(lock); } catch {}
+      return sperren(pfad);
+    }
+    throw new Error('Register ist gesperrt (register.csv.lock) — läuft gerade ein zweiter belegwerk-Prozess? Sperren über 60 s gelten als verwaist und werden automatisch übernommen.');
+  }
+}
+
 /** Trägt eine Rechnung ein: 'neu' | 'unveraendert'. */
 export function eintragen(pfad, { nummer, datum, brutto, datenhash }) {
-  vertraeglich(pfad, nummer, datenhash);
-  if (!existsSync(pfad)) writeFileSync(pfad, 'nummer;datum;brutto;datenhash;kettenhash\n');
-  const alle = zeilen(pfad);
-  const vorhanden = alle.find((z) => z.split(';')[0] === nummer);
-  if (vorhanden) return 'unveraendert';
-  const letzte = alle.at(-1)?.split(';')[4] ?? '';
-  const inhalt = `${nummer};${datum};${brutto};${datenhash}`;
-  appendFileSync(pfad, `${inhalt};${sha((letzte || SEED) + inhalt)}\n`);
-  return 'neu';
+  const freigeben = sperren(pfad);
+  try {
+    vertraeglich(pfad, nummer, datenhash);
+    if (!existsSync(pfad)) writeFileSync(pfad, 'nummer;datum;brutto;datenhash;kettenhash\n');
+    const alle = zeilen(pfad);
+    const vorhanden = alle.find((z) => z.split(';')[0] === nummer);
+    if (vorhanden) return 'unveraendert';
+    const letzte = alle.at(-1)?.split(';')[4] ?? '';
+    const inhalt = `${nummer};${datum};${brutto};${datenhash}`;
+    appendFileSync(pfad, `${inhalt};${sha((letzte || SEED) + inhalt)}\n`);
+    return 'neu';
+  } finally {
+    freigeben();
+  }
 }
 
 /** Prüft die Kette. Gibt eine Liste von Fehlern zurück — leer heißt in Ordnung. */

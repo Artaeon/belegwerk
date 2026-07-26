@@ -1,6 +1,6 @@
 {
   "name": "belegwerk",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Das einfachste Rechnungs- und Registerwerkzeug für kleine Unternehmen. Eine JSON je Rechnung, ein PDF, ein manipulationsevidentes Register. Kein Server, keine Datenbank, kein Abo.",
   "private": true,
   "type": "module",

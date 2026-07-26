@@ -8,7 +8,7 @@
  * wird an dem gemessen, was es VERWEIGERT.
  */
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, mkdirSync, utimesSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -102,6 +102,23 @@ describe('register', () => {
     const zeilen = readFileSync(reg, 'utf8').trim().split('\n');
     writeFileSync(reg, [zeilen[0], zeilen[2]].join('\n') + '\n');
     expect(pruefen(reg).fehler.length).toBeGreaterThan(0);
+  });
+
+  test('frische Sperre blockiert einen zweiten Lauf', () => {
+    writeFileSync(`${reg}.lock`, '99999');
+    expect(() => eintragen(reg, { nummer: 'RE-9', datum: 'x', brutto: '1,00', datenhash: 'zzz' })).toThrow('gesperrt');
+    rmSync(`${reg}.lock`);
+  });
+
+  test('verwaiste Sperre (Absturz) wird übernommen, danach ist sie weg', () => {
+    writeFileSync(`${reg}.lock`, '99999');
+    const alt = new Date(Date.now() - 120_000);
+    utimesSync(`${reg}.lock`, alt, alt);
+    const reg2 = join(dir, 'register2.csv');
+    writeFileSync(`${reg2}.lock`, '99999');
+    utimesSync(`${reg2}.lock`, alt, alt);
+    expect(eintragen(reg2, { nummer: 'RE-9', datum: 'x', brutto: '1,00', datenhash: 'zzz' })).toBe('neu');
+    expect(existsSync(`${reg2}.lock`)).toBe(false);
   });
 });
 
@@ -495,5 +512,95 @@ describe('CLI End-to-End', () => {
     const r = lauf('unfug');
     expect(r.code).toBe(0);
     expect(r.out).toContain('Dateien. Belege. Nachweis.');
+  });
+});
+
+/* ══ Ausfall und Wiederanlauf — die Szenarien, die nachts passieren ══ */
+
+describe('Ausfall und Wiederanlauf', () => {
+  let M;
+  const lauf = (...args) => {
+    const p = Bun.spawnSync(['bun', CLI, ...args], { cwd: M });
+    return { code: p.exitCode, out: p.stdout.toString() + p.stderr.toString() };
+  };
+
+  beforeAll(() => {
+    M = mkdtempSync(join(tmpdir(), 'belegwerk-ausfall-'));
+    lauf('init');
+    const firma = JSON.parse(readFileSync(join(M, 'firma.json'), 'utf8'));
+    firma.name = 'Ausfall OG';
+    firma.uid = 'ATU88888888';
+    writeFileSync(join(M, 'firma.json'), JSON.stringify(firma, null, 2));
+    writeFileSync(join(M, 'wiederkehrend/betrieb.json'), JSON.stringify({
+      empfaenger: { name: 'Gemeinde Y', adresse: 'Platz 2, 4020 Ort' },
+      positionen: [{ text: 'Betrieb', preis: 40 }],
+    }));
+  });
+  afterAll(() => rmSync(M, { recursive: true, force: true }));
+
+  test('Server war am Monatsersten aus: verpasste Monate werden nachgeholt, Nummern bleiben dicht', () => {
+    expect(lauf('wiederkehrend', '2026-05').code).toBe(0);
+    expect(lauf('wiederkehrend', '2026-06').code).toBe(0);
+    expect(lauf('wiederkehrend', '2026-07').code).toBe(0);
+    const register = readFileSync(join(M, 'register.csv'), 'utf8');
+    expect(register).toContain('RE-2026-001');
+    expect(register).toContain('RE-2026-002');
+    expect(register).toContain('RE-2026-003');
+    const r = lauf('pruefen');
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('Nummernkreis dicht');
+  }, 30_000);
+
+  test('Absturz zwischen PDF und Registereintrag: der nächste Lauf heilt', () => {
+    /* Simulation: Rechnung ausgestellt, aber der Registereintrag ging
+       verloren (Absturz, Stromausfall). Das PDF liegt schon da. */
+    const pfad = join(M, 'rechnungen', 'RE-2026-500.json');
+    writeFileSync(pfad, JSON.stringify({
+      nummer: 'RE-2026-500', datum: '2026-07-01',
+      empfaenger: { name: 'K', adresse: 'W' }, leistungszeitraum: 'Juni 2026',
+      positionen: [{ text: 'Arbeit', preis: 100 }],
+    }));
+    expect(lauf('rechnung', 'rechnungen/RE-2026-500.json').code).toBe(0);
+    const mitEintrag = readFileSync(join(M, 'register.csv'), 'utf8');
+    writeFileSync(join(M, 'register.csv'), mitEintrag.split('\n').filter((z) => !z.includes('RE-2026-500')).join('\n'));
+    const r = lauf('rechnung', 'rechnungen/RE-2026-500.json');
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('eingetragen');
+    expect(lauf('pruefen').code).toBe(0);
+  }, 30_000);
+
+  test('Wiederherstellung: aus dem sichern-Archiv entsteht ein prüfbarer Mandant', () => {
+    const ziel = mkdtempSync(join(tmpdir(), 'belegwerk-restore-'));
+    const s = lauf('sichern', ziel);
+    expect(s.code).toBe(0);
+    const archiv = s.out.match(/\S+\.tar\.gz/)[0];
+    const wieder = mkdtempSync(join(tmpdir(), 'belegwerk-wieder-'));
+    expect(Bun.spawnSync(['tar', '-xzf', archiv, '-C', wieder, '--strip-components', '1']).exitCode).toBe(0);
+    const p = Bun.spawnSync(['bun', CLI, 'pruefen'], { cwd: wieder });
+    expect(p.exitCode).toBe(0);
+    expect(p.stdout.toString()).toContain('Kette geschlossen');
+    rmSync(ziel, { recursive: true, force: true });
+    rmSync(wieder, { recursive: true, force: true });
+  }, 30_000);
+
+  test('kaputte firma.json: klare Ablehnung statt stillem Weiterlaufen', () => {
+    const kaputt = mkdtempSync(join(tmpdir(), 'belegwerk-kaputt-'));
+    writeFileSync(join(kaputt, 'firma.json'), '{ "name": "kaputt", ');
+    const p = Bun.spawnSync(['bun', CLI, 'pruefen'], { cwd: kaputt });
+    expect(p.exitCode).toBe(1);
+    rmSync(kaputt, { recursive: true, force: true });
+  });
+
+  test('unsinniger Monat bei wiederkehrend: Fehler, keine Rechnung', () => {
+    const r = lauf('wiederkehrend', 'August');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('kein Monat');
+  });
+
+  test('mahnung für Bezahltes: verweigert', () => {
+    lauf('bezahlt', 'RE-2026-500');
+    const r = lauf('mahnung', 'RE-2026-500');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('nicht offen');
   });
 });
