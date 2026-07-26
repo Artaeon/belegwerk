@@ -256,6 +256,50 @@ describe('stil: Branding je Mandant', () => {
   });
 });
 
+/* ══ Standardvorlage — die belegwerk-Designsprache ═══════════════════ */
+
+describe('vorlagen/standard', () => {
+  const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const dir = mkdtempSync(join(tmpdir(), 'belegwerk-std-'));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  test('stil.css ist erzeugt, trägt Tokens-Farben und Plex', () => {
+    const css = readFileSync(join(REPO, 'vorlagen/standard/stil.css'), 'utf8');
+    for (const farbe of ['#161713', '#B84B25', '#355B4A', '#6C6E68', '#D8D5CC']) {
+      expect(css).toContain(farbe);
+    }
+    expect(css).toContain('IBM Plex Sans');
+    expect(css).toContain('IBM Plex Mono');
+    expect(css).toContain('data:font/woff;base64,');
+  });
+
+  test('als Mandanten-Vorlage eingesetzt landet sie im Dokument', () => {
+    mkdirSync(join(dir, 'vorlage'), { recursive: true });
+    writeFileSync(join(dir, 'vorlage/stil.css'), readFileSync(join(REPO, 'vorlagen/standard/stil.css')));
+    const firma = { name: 'Standard OG', adresse: 'Weg 1, Linz', uid: 'ATU3', iban: 'AT3', wurzel: dir };
+    const p = join(dir, 'r.json');
+    writeFileSync(p, JSON.stringify({
+      nummer: 'RE-1', datum: '2026-07-01',
+      empfaenger: { name: 'K', adresse: 'W' }, leistungszeitraum: 'Juli 2026',
+      positionen: [{ text: 'A', preis: 10 }],
+    }));
+    const html = htmlRechnung(lesen(p, firma), firma);
+    expect(html).toContain('#B84B25');
+    expect(html).toContain('#355B4A');
+    expect(html).toContain('IBM Plex Sans');
+    /* Kein belegwerk-Logo in Mandanten-Dokumenten — nur der Firmenname. */
+    expect(html).toContain('Standard OG');
+    expect(html).not.toContain('belegwerk-logo');
+  });
+
+  test('der Generator ist deterministisch', () => {
+    const vorher = readFileSync(join(REPO, 'vorlagen/standard/stil.css'), 'utf8');
+    const p = Bun.spawnSync(['bun', join(REPO, 'scripts/standard-vorlage.mjs')]);
+    expect(p.exitCode).toBe(0);
+    expect(readFileSync(join(REPO, 'vorlagen/standard/stil.css'), 'utf8')).toBe(vorher);
+  });
+});
+
 /* ══ End-to-End — die CLI im Wegwerf-Mandanten ═══════════════════════ */
 
 describe('CLI End-to-End', () => {
