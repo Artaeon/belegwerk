@@ -55,6 +55,27 @@ doppelte Rechnung. Alternativ als Cron:
 Datenschutz dazu (verschlüsselte Ablage, Rollen nach DSGVO,
 Löschfristen): [`../DATENSCHUTZ.md`](../DATENSCHUTZ.md).
 
+## Ausfall und Wiederanlauf — durchgespielt, nicht behauptet
+
+Jedes Szenario hier ist ein Testfall in der Suite (`bun test`,
+Abschnitt „Ausfall und Wiederanlauf"):
+
+| Szenario | Verhalten |
+|---|---|
+| Server am Monatsersten aus | `Persistent=true` holt den Timer-Lauf nach; verpasste Monate lassen sich einzeln nachholen (`wiederkehrend 2026-05` …) — Nummern bleiben dicht, `pruefen` bestätigt es |
+| Absturz zwischen PDF und Registereintrag | Der nächste Lauf derselben Rechnung heilt: gleiche Daten → Eintrag wird nachgetragen, Kette bleibt geschlossen |
+| Zwei Läufe gleichzeitig (Timer + Hand) | `register.csv.lock` sperrt atomar; der zweite Lauf bricht mit klarer Meldung ab. Verwaiste Sperren (> 60 s, Absturz) werden automatisch übernommen |
+| Platte weg | Wiederherstellung aus `sichern`-Archiv oder Git-Clone: entpacken, `pruefen` — die Kette beweist, dass der Stand vollständig ist |
+| firma.json beschädigt | Klare Ablehnung mit Exit 1, kein stilles Weiterlaufen |
+
+Der Wiederanlauf nach Totalausfall in drei Zeilen:
+
+```bash
+tar -xzf belegwerk-firma-JJJJ-MM-TT.tar.gz -C /srv/belegwerk/   # oder: git clone
+cd /srv/belegwerk/<mandant>
+bun /srv/belegwerk/belegwerk/src/belegwerk.mjs pruefen           # Kette geschlossen? Dann weiter wie vorher.
+```
+
 ## Was der Server NICHT übernimmt
 
 - **Versand.** Rechnungen verschickt ein Mensch (oder ein bewusst

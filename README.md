@@ -2,6 +2,12 @@
 
 ![belegwerk — Dateien. Belege. Nachweis.](brand/github/github-readme-banner-1600x600.svg)
 
+[![tests](https://github.com/stoicera/belegwerk/actions/workflows/tests.yml/badge.svg)](https://github.com/stoicera/belegwerk/actions/workflows/tests.yml)
+![Lizenz](https://img.shields.io/badge/Lizenz-MIT-355B4A?labelColor=161713)
+![Runtime](https://img.shields.io/badge/Runtime-Bun-B84B25?labelColor=161713)
+![Recht](https://img.shields.io/badge/%C2%A7%2011%20UStG-erzwungen-355B4A?labelColor=161713)
+![Register](https://img.shields.io/badge/Register-SHA--256--Kette-B84B25?labelColor=161713)
+
 **Dateien. Belege. Nachweis.** — das einfachste Rechnungswerkzeug für
 österreichische kleine Unternehmen. Ein Ordner ist dein Unternehmen, eine JSON-Datei ist eine
 Rechnung, ein Befehl setzt das PDF und führt ein manipulationsevidentes
