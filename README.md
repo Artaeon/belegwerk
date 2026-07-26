@@ -224,7 +224,9 @@ bun test --coverage  # Zeilenabdeckung der Bibliotheken
 ```
 
 Die Suite deckt auch die Fehlerwege ab: fehlende Pflichtangaben,
-manipulierte Register, doppelte Storni, Mahnung vor Fälligkeit.
+manipulierte Register, doppelte Storni, Mahnung vor Fälligkeit. Was sie
+im Einzelnen prüft und wo ihre ehrlichen Grenzen liegen, steht datiert
+in [TESTBERICHT.md](TESTBERICHT.md).
 
 ## Copyright und Lizenz
 
