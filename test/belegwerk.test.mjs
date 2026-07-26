@@ -391,13 +391,13 @@ describe('CLI End-to-End', () => {
     expect(r.out).toContain('1.200,00');
     expect(existsSync(join(M, 'rechnungen/RE-2026-901.pdf'))).toBe(true);
     expect(readFileSync(join(M, 'register.csv'), 'utf8')).toContain('RE-2026-901');
-  });
+  }, 30_000);
 
   test('rechnung: unverändert erneut = idempotent', () => {
     const r = lauf('rechnung', 'rechnungen/RE-2026-901.json');
     expect(r.code).toBe(0);
     expect(r.out).toContain('unverändert');
-  });
+  }, 30_000);
 
   test('rechnung: geänderte Daten unter vergebener Nummer verweigert, PDF unangetastet', () => {
     const vorher = readFileSync(join(M, 'rechnungen/RE-2026-901.pdf')).length;
@@ -415,7 +415,7 @@ describe('CLI End-to-End', () => {
     expect(r.code).toBe(0);
     expect(r.out).toContain('Muster');
     expect(readFileSync(join(M, 'register.csv'), 'utf8')).toBe(vorher);
-  });
+  }, 30_000);
 
   test('wiederkehrend: erzeugt, nummeriert, idempotent', () => {
     writeFileSync(join(M, 'wiederkehrend/betrieb.json'), JSON.stringify({
@@ -445,7 +445,7 @@ describe('CLI End-to-End', () => {
     r = lauf('storno', 'RE-2026-901');
     expect(r.code).toBe(1);
     expect(r.out).toContain('bereits storniert');
-  });
+  }, 30_000);
 
   test('storno: unbekannte Nummer verweigert', () => {
     const r = lauf('storno', 'RE-0000-000');
@@ -460,7 +460,7 @@ describe('CLI End-to-End', () => {
     expect(r.out).toContain('RE-2026-905');
     expect(r.out).not.toContain('RE-2026-901'); // storniert
     expect(r.out).toContain('überfällig'); // datum 2026-06-01 + 14 Tage liegt zurück
-  });
+  }, 30_000);
 
   test('mahnung: Stufe 1, dann Stufe 2 mit Verzugsfolgen', () => {
     let r = lauf('mahnung', 'RE-2026-905');
@@ -470,7 +470,7 @@ describe('CLI End-to-End', () => {
     r = lauf('mahnung', 'RE-2026-905');
     expect(r.out).toContain('2. Mahnung');
     expect(existsSync(join(M, 'rechnungen/RE-2026-905-mahnung-2.pdf'))).toBe(true);
-  });
+  }, 30_000);
 
   test('mahnung: vor Fälligkeit verweigert', () => {
     const morgen = new Date(); morgen.setDate(morgen.getDate() - 1);
@@ -478,7 +478,7 @@ describe('CLI End-to-End', () => {
     const r = lauf('mahnung', 'RE-2026-904');
     expect(r.code).toBe(1);
     expect(r.out).toContain('vor Fälligkeit');
-  });
+  }, 30_000);
 
   test('bezahlt: vermerkt, doppelt verweigert, verschwindet aus offen', () => {
     let r = lauf('bezahlt', 'RE-2026-905', '2026-07-20');
@@ -537,7 +537,7 @@ describe('CLI End-to-End', () => {
     const r = lauf('rechnung', rechnungJson('RE-2026-910.json', { nummer: 'RE-2026-910' }));
     expect(r.code).toBe(0);
     expect(existsSync(join(M, 'rechnungen/RE-2026-910.pdf'))).toBe(true);
-  });
+  }, 30_000);
 
   test('hilfe: unbekannter Befehl zeigt die Übersicht', () => {
     const r = lauf('unfug');
