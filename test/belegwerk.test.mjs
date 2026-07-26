@@ -559,6 +559,36 @@ describe('Sicherheit', () => {
     expect(() => eintragen(reg, { nummer: 'RE;9', datum: 'x', brutto: '1,00', datenhash: 'h' })).toThrow('unzulässig');
     expect(() => eintragen(reg, { nummer: 'RE-9', datum: 'x\ny', brutto: '1,00', datenhash: 'h' })).toThrow('unzulässig');
   });
+
+  test('CSS-Injection: Farben aus firma.json müssen Hex sein', () => {
+    const boese = { ...firma, stil: { primaer: 'red} body{display:none' } };
+    expect(() => htmlRechnung(lesen(schreib(basis), boese), boese)).toThrow('Hex-Farbe');
+  });
+
+  test('Pfad-Ausbruch: Logo und Schrift außerhalb des Mandanten abgelehnt', () => {
+    writeFileSync(join(dir, '..', 'fremd.svg'), '<svg/>');
+    const boese = { ...firma, logoPfad: '../fremd.svg' };
+    expect(() => htmlRechnung(lesen(schreib(basis), boese), boese)).toThrow('außerhalb des Mandanten');
+    const absolut = { ...firma, schriftPfad: '/etc/hosts' };
+    expect(() => htmlRechnung(lesen(schreib(basis), absolut), absolut)).toThrow('außerhalb des Mandanten');
+  });
+
+  test('CRLF im Register (Windows-Editor) ist kein Manipulationsalarm', () => {
+    const reg = join(dir, 'crlf.csv');
+    eintragen(reg, { nummer: 'RE-1', datum: '2026-07-01', brutto: '100,00', datenhash: 'aaa' });
+    eintragen(reg, { nummer: 'RE-2', datum: '2026-07-02', brutto: '200,00', datenhash: 'bbb' });
+    writeFileSync(reg, readFileSync(reg, 'utf8').replaceAll('\n', '\r\n'));
+    expect(pruefen(reg).fehler).toEqual([]);
+    /* Aber eine ECHTE Änderung fällt weiterhin auf. */
+    writeFileSync(reg, readFileSync(reg, 'utf8').replace('100,00', '999,99'));
+    expect(pruefen(reg).fehler.length).toBeGreaterThan(0);
+  });
+
+  test('kaputte Rechnungs-JSON: Dateiname in der Fehlermeldung', () => {
+    const p = join(dir, 'defekt.json');
+    writeFileSync(p, '{ "nummer": ');
+    expect(() => lesen(p, firma)).toThrow('keine gültige JSON-Datei');
+  });
 });
 
 /* ══ Import, Export, Nummernstart — der Umstieg vom alten System ═════ */
@@ -609,6 +639,14 @@ describe('Import, Export und Nummernstart', () => {
     const r = lauf('import', 'konflikt.csv');
     expect(r.code).toBe(1);
     expect(r.out).toContain('stornieren');
+  });
+
+  test('import: Strichpunkt im Namen wird klar benannt', () => {
+    writeFileSync(join(M, 'spalten.csv'),
+      'nummer;datum;empfaenger;brutto\nRE-2026-090;2026-01-01;Meier; Huber & Co;100,00\n');
+    const r = lauf('import', 'spalten.csv');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('5 Spalten statt 4');
   });
 
   test('import: Pfad-Traversal in der Nummer wird abgelehnt', () => {

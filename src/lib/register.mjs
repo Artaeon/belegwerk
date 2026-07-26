@@ -17,7 +17,11 @@ import { createHash } from 'node:crypto';
 const SEED = 'belegwerk-register-v1';
 export const sha = (s) => createHash('sha256').update(s).digest('hex');
 
-const zeilen = (pfad) => readFileSync(pfad, 'utf8').trim().split('\n').slice(1);
+/* \r wird beim Lesen entfernt: Ein Windows-Editor, der das Register
+   mit CRLF speichert, ändert keine Daten — er darf keinen
+   Manipulationsalarm auslösen. In die WERTE kommt \r nie hinein,
+   das lehnt eintragen ab. */
+const zeilen = (pfad) => readFileSync(pfad, 'utf8').replace(/\r/g, '').trim().split('\n').slice(1);
 
 /** Wirft, wenn die Nummer mit anderen Daten schon vergeben ist. Läuft
  *  VOR dem Setzen des PDFs — sonst läge die geänderte Fassung schon auf

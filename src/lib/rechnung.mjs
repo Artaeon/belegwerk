@@ -19,7 +19,12 @@ const rund = (n) => Math.round(n * 100) / 100;
 /** Liest und validiert eine Rechnungs-JSON. Wirft mit einer Liste
  *  fehlender Pflichtangaben — alles auf einmal, nicht eines je Lauf. */
 export function lesen(datei, firma) {
-  const r = JSON.parse(readFileSync(datei, 'utf8'));
+  let r;
+  try {
+    r = JSON.parse(readFileSync(datei, 'utf8'));
+  } catch (e) {
+    throw new Error(`${datei} ist keine gültige JSON-Datei: ${e.message.split('\n')[0]}`);
+  }
   r.muster = r.muster === true || basename(datei).includes('beispiel');
 
   const fehlt = [];

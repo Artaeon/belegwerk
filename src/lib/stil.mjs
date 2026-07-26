@@ -8,7 +8,7 @@
  * Marke auf fremden Rechnungen.
  */
 import { readFileSync, existsSync } from 'node:fs';
-import { extname, join, isAbsolute } from 'node:path';
+import { extname, join, isAbsolute, resolve, sep } from 'node:path';
 
 /* Auch Anführungszeichen: Werte landen in Attributen (alt="…") — ein
    Empfängername mit `" onload="` wäre sonst Markup statt Text. */
@@ -19,10 +19,23 @@ export const esc = (s) => String(s)
 const MIME = { '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' };
 
 /* Pfade in firma.json sind relativ zum Mandanten-Ordner — nicht zum
-   Arbeitsverzeichnis. Sonst findet derselbe Befehl das Logo aus
-   rechnungen/2026/ heraus nicht mehr. */
-const aufloesen = (firma, pfad) =>
-  isAbsolute(pfad) || !firma.wurzel ? pfad : join(firma.wurzel, pfad);
+   Arbeitsverzeichnis. Und sie bleiben IM Mandanten: Ein Branding-Kit,
+   das man übernimmt, darf keine Dateien von anderswo einbetten. */
+const aufloesen = (firma, pfad) => {
+  const voll = isAbsolute(pfad) || !firma.wurzel ? pfad : join(firma.wurzel, pfad);
+  if (firma.wurzel && !resolve(voll).startsWith(resolve(firma.wurzel) + sep)) {
+    throw new Error(`${pfad} liegt außerhalb des Mandanten-Ordners — Logo und Schrift gehören hinein (z. B. vorlage/logo.svg).`);
+  }
+  return voll;
+};
+
+/* Farben aus firma.json landen wörtlich im CSS — deshalb nur Hex.
+   „red} body{display:none" wäre sonst Stilbruch im Wortsinn. */
+const farbe = (wert, feld) => {
+  if (wert === undefined) return undefined;
+  if (!/^#[0-9a-fA-F]{3,8}$/.test(wert)) throw new Error(`stil.${feld} „${wert}" ist keine Hex-Farbe (#RRGGBB).`);
+  return wert;
+};
 
 /** Vorlagen-Überschreibung: Der Mandant kann unter vorlage/ eigene
  *  Bausteine ablegen — ein Branding-Kit legt sie dort ab, belegwerk
@@ -38,8 +51,8 @@ const ersetzen = (tpl, werte) =>
   tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => werte[k] ?? '');
 
 export function seite(firma, titel, meta, inhalt) {
-  const primaer = firma.stil?.primaer ?? '#111827';
-  const akzent = firma.stil?.akzent ?? primaer;
+  const primaer = farbe(firma.stil?.primaer, 'primaer') ?? '#111827';
+  const akzent = farbe(firma.stil?.akzent, 'akzent') ?? primaer;
   const logo = firma.logoPfad
     ? `<img src="data:${MIME[extname(firma.logoPfad).toLowerCase()]};base64,${readFileSync(aufloesen(firma, firma.logoPfad)).toString('base64')}" alt="${esc(firma.name)}">`
     : `<span class="firmenname">${esc(firma.name)}</span>`;

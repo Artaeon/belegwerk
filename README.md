@@ -197,14 +197,21 @@ Die Angriffsflächen sind einzeln zugenagelt und einzeln getestet:
   gleichzeitige Läufe sperrt `register.csv.lock` atomar.
 - **Beträge sind Zahlen**: Ein Preis, der keine Zahl ist, wird
   abgelehnt — es gibt keine Rechnung über „NaN €".
+- **CSS-Injection über die Konfiguration**: Farben in `firma.json`
+  müssen Hex sein — sie landen wörtlich im Stylesheet.
+- **Pfad-Ausbruch bei Logo und Schrift**: `logoPfad`/`schriftPfad`
+  müssen im Mandanten-Ordner liegen — ein übernommenes Branding-Kit
+  bettet keine fremden Dateien ein.
+- **Kein falscher Alarm**: Windows-Zeilenenden (CRLF) im Register sind
+  keine Manipulation und lösen keinen aus — echte Änderungen weiterhin.
 - **Keine Netzfläche**: kein Port, keine Telemetrie, keine externen
   Ressourcen im PDF — siehe [DATENSCHUTZ.md](DATENSCHUTZ.md).
 
 ## Testen
 
 ```bash
-bun test        # Unit-Tests (Parser, Nummernkreis, Registerkette)
-                # + End-to-End: jede CLI-Funktion in einem Wegwerf-Mandanten
+bun test             # Unit + End-to-End: jede CLI-Funktion im Wegwerf-Mandanten
+bun test --coverage  # Zeilenabdeckung der Bibliotheken
 ```
 
 Die Suite deckt auch die Fehlerwege ab: fehlende Pflichtangaben,

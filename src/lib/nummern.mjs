@@ -11,7 +11,7 @@ const MUSTER_STANDARD = { muster: 'RE-{jahr}-{nr}', breite: 3, start: 1 };
 
 const registerNummern = (pfad) =>
   existsSync(pfad)
-    ? readFileSync(pfad, 'utf8').trim().split('\n').slice(1).map((z) => z.split(';')[0])
+    ? readFileSync(pfad, 'utf8').replace(/\r/g, '').trim().split('\n').slice(1).map((z) => z.split(';')[0])
     : [];
 
 /** Die nächste freie Nummer für ein Jahr. `start` verschiebt den

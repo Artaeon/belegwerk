@@ -85,7 +85,7 @@ function alleRechnungen(wurzel) {
 /** Registerzeilen, geparst — die Quelle für alles Summierte. */
 const registerZeilen = (m) =>
   existsSync(m.register)
-    ? readFileSync(m.register, 'utf8').trim().split('\n').slice(1).map((z) => {
+    ? readFileSync(m.register, 'utf8').replace(/\r/g, '').trim().split('\n').slice(1).map((z) => {
         const [nummer, datum, brutto] = z.split(';');
         return { nummer, datum, brutto: parseBetrag(brutto) };
       })
@@ -117,7 +117,7 @@ function csvAnhaengen(pfad, kopf, zeile) {
 }
 
 const csvLesen = (pfad) =>
-  existsSync(pfad) ? readFileSync(pfad, 'utf8').trim().split('\n').slice(1).map((z) => z.split(';')) : [];
+  existsSync(pfad) ? readFileSync(pfad, 'utf8').replace(/\r/g, '').trim().split('\n').slice(1).map((z) => z.split(';')) : [];
 
 try {
   if (befehl === 'init') {
@@ -284,7 +284,11 @@ try {
     let neu = 0, unveraendert = 0;
     mkdirSync(join(m.wurzel, 'rechnungen', 'altbestand'), { recursive: true });
     for (const [i, z] of zeilen.slice(1).entries()) {
-      const [nummer, datum, empfaenger, bruttoRoh] = z.split(';').map((s) => s?.trim());
+      const teile = z.split(';').map((s) => s?.trim());
+      if (teile.length !== 4) {
+        throw new Error(`Zeile ${i + 2}: ${teile.length} Spalten statt 4 — Strichpunkte im Namen durch Beistriche ersetzen.`);
+      }
+      const [nummer, datum, empfaenger, bruttoRoh] = teile;
       if (!nummer || !datum || !bruttoRoh) throw new Error(`Zeile ${i + 2} unvollständig: „${z}"`);
       /* Die Nummer wird ein Dateiname — nur Zeichen, die keiner Deutung
          bedürfen. „../" wäre sonst ein Schreibzugriff außerhalb des
