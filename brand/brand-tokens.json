@@ -1,0 +1,58 @@
+{
+  "brand": "belegwerk",
+  "version": "1.0",
+  "colors": {
+    "belegtinte": {
+      "hex": "#161713",
+      "role": "Primary text and dark surfaces"
+    },
+    "archivpapier": {
+      "hex": "#F3F0E8",
+      "role": "Primary light surface"
+    },
+    "werkorange": {
+      "hex": "#B84B25",
+      "role": "Action and origin accent"
+    },
+    "registergruen": {
+      "hex": "#355B4A",
+      "role": "Validation and register status"
+    },
+    "graphit": {
+      "hex": "#6C6E68",
+      "role": "Secondary text"
+    },
+    "stahl": {
+      "hex": "#D8D5CC",
+      "role": "Lines and quiet surfaces"
+    }
+  },
+  "typography": {
+    "display": {
+      "family": "IBM Plex Sans",
+      "weight": 600
+    },
+    "body": {
+      "family": "IBM Plex Sans",
+      "weight": 400
+    },
+    "editorial": {
+      "family": "IBM Plex Serif",
+      "weight": 400
+    },
+    "code": {
+      "family": "IBM Plex Mono",
+      "weight": 400
+    }
+  },
+  "spacing": {
+    "unit": 4,
+    "logo_clearspace": "one internal joint gap x"
+  },
+  "radius": {
+    "small": 4,
+    "medium": 8,
+    "large": 14
+  },
+  "tagline": "Dateien. Belege. Nachweis."
+}

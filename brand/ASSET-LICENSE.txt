@@ -1,0 +1,9 @@
+belegwerk Brand Assets
+
+The custom logo, wordmark, marketing templates, and brand materials in this
+package are created for the belegwerk project and Stoicera Group. They are not
+covered by the software repository's MIT license unless the project owners
+explicitly state otherwise.
+
+IBM Plex font files are redistributed under the SIL Open Font License 1.1.
+See 06-fonts/OFL-1.1.txt.
