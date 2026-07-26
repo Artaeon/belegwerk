@@ -69,6 +69,8 @@ Muster-Rechnung mit gemischten Steuersätzen aus `beispiel/`.
 | `konto <betrag> [datum]` | Kontostand manuell festhalten |
 | `ausgabe <betrag> <text> [kategorie]` | Ausgabe notieren |
 | `stand` | Überblick: Konto, offene Forderungen, Jahressummen, Ziele |
+| `export [jahr]` | Jahres-CSV für die Steuerberatung: Netto, USt, Brutto, Status, Summen |
+| `import <datei.csv>` | Altbestand aus dem Vorsystem ins Register übernehmen |
 | `sichern [ziel]` | Datiertes, selbstprüfendes tar.gz des ganzen Mandanten |
 | `pruefen` | Registerkette und Nummernkreis verifizieren |
 
@@ -96,6 +98,23 @@ Muster-Rechnung mit gemischten Steuersätzen aus `beispiel/`.
   gekennzeichnet, kein Registereintrag
 - Ab 10.000 € brutto verlangt § 11 UStG die UID des Empfängers —
   belegwerk auch, selbst beim Storno über −10.000 €.
+- **Nummernkreis**: `"nummern": { "muster": "RE-{jahr}-{nr}", "breite": 3,
+  "start": 100 }` in firma.json — `start` verschiebt den Beginn (etwa um
+  einen Altbestand freizuhalten); sobald Nummern vergeben sind, zählt
+  allein das Register.
+
+## Umstieg und Steuerberatung
+
+`belegwerk import altbestand.csv` (Kopfzeile
+`nummer;datum;empfaenger;brutto`) übernimmt die Rechnungen des
+Vorsystems ins Register: Nummernkreis und Vollständigkeit stimmen über
+den Werkzeugwechsel hinweg, die Originalbelege bleiben im alten System
+archiviert (BAO: 7 Jahre). Altbestand ist kein offener Posten und wird
+hier nicht storniert — das tut das System, das ihn ausgestellt hat.
+
+`belegwerk export 2026` schreibt die Jahres-CSV für die Steuerberatung:
+je Rechnung Netto, USt, Brutto und Status (offen / bezahlt / storniert /
+altbestand), am Ende die Summenzeile.
 
 ## Branding: dein Kit, deine Dokumente
 

@@ -55,6 +55,15 @@ doppelte Rechnung. Alternativ als Cron:
 Datenschutz dazu (verschlüsselte Ablage, Rollen nach DSGVO,
 Löschfristen): [`../DATENSCHUTZ.md`](../DATENSCHUTZ.md).
 
+## Jahreswechsel
+
+```
+0 8 2 1 *  cd /srv/belegwerk/stoicera && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs export $(date -d "last year" +\%Y 2>/dev/null || date -v-1y +\%Y) && git add -A && git commit -m "Jahresexport" && git push
+```
+
+Der Export des Vorjahres liegt dann unter `export/` — die CSV, die die
+Steuerberatung bekommt.
+
 ## Ausfall und Wiederanlauf — durchgespielt, nicht behauptet
 
 Jedes Szenario hier ist ein Testfall in der Suite (`bun test`,

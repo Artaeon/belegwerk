@@ -78,7 +78,8 @@ Keine Rechtspflichten, aber der ehrliche Produktvergleich:
 - ~~Wiederkehrende Rechnungen~~ → `belegwerk wiederkehrend` + Server-Timer, seit v0.2
 - ~~Zahlungsstatus und Mahnwesen~~ → `bezahlt` / `offen` / `mahnung`, seit v0.3
   (Mahnstufen mit § 456/458 UGB; Versand bewusst von Hand)
-- UVA-Zuarbeit (Kennzahlen je Quartal) und Export für die Steuerberatung (BMD)
+- ~~Export für die Steuerberatung~~ → `belegwerk export` (Jahres-CSV mit Netto/USt/Status), seit v0.8; BMD-Konvention weiterhin offen
+- UVA-Zuarbeit (Kennzahlen je Quartal)
 - Kundenportal, Online-Zahlung
 
 **Empfehlung deshalb: Parallelbetrieb.** InvoiceNinja bleibt führend,
