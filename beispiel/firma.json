@@ -6,5 +6,8 @@
   "email": "office@beispiel.example",
   "web": "beispiel.example",
   "kleinunternehmer": false,
-  "stil": { "primaer": "#0B1F3A", "akzent": "#2558E8" }
+  "stil": {
+    "primaer": "#161713",
+    "akzent": "#B84B25"
+  }
 }
