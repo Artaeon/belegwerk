@@ -2,7 +2,7 @@
 
 ![belegwerk — Dateien. Belege. Nachweis.](brand/github/github-readme-banner-1600x600.svg)
 
-[![tests](https://github.com/stoicera/belegwerk/actions/workflows/tests.yml/badge.svg)](https://github.com/stoicera/belegwerk/actions/workflows/tests.yml)
+[![tests](https://github.com/Artaeon/belegwerk/actions/workflows/tests.yml/badge.svg)](https://github.com/Artaeon/belegwerk/actions/workflows/tests.yml)
 ![Lizenz](https://img.shields.io/badge/Lizenz-MIT-355B4A?labelColor=161713)
 ![Runtime](https://img.shields.io/badge/Runtime-Bun-B84B25?labelColor=161713)
 ![Recht](https://img.shields.io/badge/%C2%A7%2011%20UStG-erzwungen-355B4A?labelColor=161713)
@@ -171,15 +171,8 @@ bun test        # Unit-Tests (Parser, Nummernkreis, Registerkette)
 Die Suite deckt auch die Fehlerwege ab: fehlende Pflichtangaben,
 manipulierte Register, doppelte Storni, Mahnung vor Fälligkeit.
 
-## Name und Herkunft
+## Copyright und Lizenz
 
-belegwerk = Beleg + Werk, in der Namensfamilie der Stoicera Group
-(kapitelwerk, fleetdeck, granit). Entstanden aus dem Rechnungs-Skript
-des Stoicera-Branding-Kits; erster Mandant ist die Stoicera Group
-selbst — das Werkzeug wird zuerst am eigenen Unternehmen bewiesen.
-Vor einem öffentlichen Rollout steht die formale Markenprüfung
-(EUIPO/Patentamt) aus — der Desk-Review fand keine Kollision.
-
-## Lizenz
-
-MIT — siehe [LICENSE](LICENSE).
+© 2026 [Stoicera Group](https://stoicera.com) — erstellt und gepflegt
+von der Stoicera Group, Österreich. Open Source unter MIT-Lizenz,
+siehe [LICENSE](LICENSE).
