@@ -710,6 +710,47 @@ describe('Import, Export und Nummernstart', () => {
   });
 });
 
+/* ══ Onboarding — einrichten muss out of the box tragen ══════════════ */
+
+describe('einrichten', () => {
+  const M = mkdtempSync(join(tmpdir(), 'belegwerk-onboarding-'));
+  afterAll(() => rmSync(M, { recursive: true, force: true }));
+
+  test('ein Befehl: Konfiguration, Vorlage, Git, Muster-PDF', () => {
+    const antworten = 'Probe OG\nProbeweg 1, 4020 Linz\nn\nATU55555555\nAT55 5500 0000 5555 5555\n\n\n\nj\n';
+    const p = Bun.spawnSync(['bun', CLI, 'einrichten'], { cwd: M, stdin: Buffer.from(antworten) });
+    expect(p.exitCode).toBe(0);
+    const firma = JSON.parse(readFileSync(join(M, 'firma.json'), 'utf8'));
+    expect(firma.name).toBe('Probe OG');
+    expect(firma.uid).toBe('ATU55555555');
+    expect(firma.nummern.start).toBe(1);
+    expect(existsSync(join(M, 'vorlage/stil.css'))).toBe(true);
+    expect(existsSync(join(M, '.git'))).toBe(true);
+    expect(existsSync(join(M, 'rechnungen/beispiel-erste-rechnung.pdf'))).toBe(true);
+    /* Das Muster darf NICHT im Register stehen. */
+    expect(existsSync(join(M, 'register.csv'))).toBe(false);
+  }, 30_000);
+
+  test('zweiter Lauf im selben Ordner: verweigert', () => {
+    const p = Bun.spawnSync(['bun', CLI, 'einrichten'], { cwd: M, stdin: Buffer.from('x\n') });
+    expect(p.exitCode).toBe(1);
+    expect(p.stderr.toString()).toContain('schon eine firma.json');
+  });
+
+  test('ohne IBAN: bricht ab, nichts angelegt', () => {
+    const leer = mkdtempSync(join(tmpdir(), 'belegwerk-onboarding2-'));
+    const p = Bun.spawnSync(['bun', CLI, 'einrichten'], { cwd: leer, stdin: Buffer.from('Probe OG\nWeg 1\nn\nATU1\n\n') });
+    expect(p.exitCode).toBe(1);
+    expect(p.stdout.toString() + p.stderr.toString()).toContain('Ohne IBAN');
+    rmSync(leer, { recursive: true, force: true });
+  });
+
+  test('server-einrichten.sh ist syntaktisch gültiges Shell', () => {
+    const p = Bun.spawnSync(['sh', '-n', join(dirname(fileURLToPath(import.meta.url)), '..', 'deploy', 'server-einrichten.sh')]);
+    expect(p.exitCode).toBe(0);
+  });
+});
+
 /* ══ Ausfall und Wiederanlauf — die Szenarien, die nachts passieren ══ */
 
 describe('Ausfall und Wiederanlauf', () => {

@@ -13,8 +13,9 @@
  *   belegwerk wiederkehrend [JJJJ-MM]  Monatsrechnungen aus wiederkehrend/
  *   belegwerk pruefen                  Registerkette + Nummernkreis prüfen
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, cpSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { eintragen, pruefen, vertraeglich, sha } from './lib/register.mjs';
 import { lesen, setzen, pdf } from './lib/rechnung.mjs';
 import { seite, esc } from './lib/stil.mjs';
@@ -138,6 +139,76 @@ try {
     mkdirSync('rechnungen', { recursive: true });
     mkdirSync('wiederkehrend', { recursive: true });
     console.log(`${OK} firma.json, rechnungen/ und wiederkehrend/ angelegt.\n  Firmendaten eintragen, dann: belegwerk rechnung rechnungen/RE-….json`);
+
+  } else if (befehl === 'einrichten') {
+    /* Das geführte Onboarding: Fragen statt JSON-Handarbeit, Git als
+       Backup-Fundament, Standardvorlage, und am Ende liegt schon die
+       erste (Muster-)Rechnung als PDF da — man sieht sofort, was man
+       bekommt. init bleibt für alle, die lieber selbst schreiben. */
+    if (existsSync('firma.json')) throw new Error('Hier liegt schon eine firma.json — einrichten startet nur in einem leeren Mandanten-Ordner.');
+    console.log(`${fett('belegwerk einrichten')} — ${orange('Dateien. Belege. Nachweis.')}`);
+    console.log(grau('Enter übernimmt den Vorschlag in Klammern. Alles ist später in firma.json änderbar.\n'));
+    const frage = (text, standard = '') => {
+      const a = prompt(`${text}${standard ? grau(` [${standard}]`) : ''}`);
+      return (a ?? '').trim() || standard;
+    };
+    const name = frage('Firmenname laut Firmenbuch/GISA?');
+    if (!name) throw new Error('Ohne Firmennamen keine Rechnung — Einrichtung abgebrochen.');
+    const adresse = frage('Anschrift (Straße Hausnummer, PLZ Ort)?');
+    const klein = /^j/i.test(frage('Kleinunternehmer nach § 6 Abs 1 Z 27 UStG? (j/N)', 'n'));
+    const uid = klein ? '' : frage('UID-Nummer (ATU…)?');
+    const iban = frage('IBAN für den Zahlungsblock?');
+    if (!iban) throw new Error('Ohne IBAN zahlt niemand — Einrichtung abgebrochen.');
+    const email = frage('E-Mail (optional)?');
+    const web = frage('Web-Adresse (optional)?');
+    const start = parseInt(frage('Erste Rechnungsnummer?', '1'), 10) || 1;
+
+    writeFileSync('firma.json', JSON.stringify({
+      name, adresse, uid, iban, bic: '', email, web,
+      kleinunternehmer: klein,
+      logoPfad: '',
+      stil: { primaer: '#161713', akzent: '#B84B25' },
+      nummern: { muster: 'RE-{jahr}-{nr}', breite: 3, start },
+    }, null, 2) + '\n');
+    mkdirSync('rechnungen', { recursive: true });
+    mkdirSync('wiederkehrend', { recursive: true });
+    console.log(`${OK} firma.json geschrieben.`);
+
+    const standardCss = join(dirname(fileURLToPath(import.meta.url)), '..', 'vorlagen', 'standard', 'stil.css');
+    if (existsSync(standardCss) && /^j/i.test(frage('Standardvorlage übernehmen (IBM Plex, ruhiger Satz)? (J/n)', 'j'))) {
+      mkdirSync('vorlage', { recursive: true });
+      cpSync(standardCss, 'vorlage/stil.css');
+      console.log(`${OK} vorlage/stil.css übernommen — eigenes Logo später via logoPfad in firma.json.`);
+    }
+
+    /* Git ist das Backup-Fundament: Historie = Aufbewahrung. Wenn kein
+       Git da ist, bleibt belegwerk sichern der Weg — beides wird gesagt. */
+    if (Bun.spawnSync(['git', 'init']).exitCode === 0) {
+      Bun.spawnSync(['git', 'add', '-A']);
+      Bun.spawnSync(['git', 'commit', '-m', 'Mandant eingerichtet (belegwerk)']);
+      console.log(`${OK} Git-Repository angelegt und erster Stand committet.`);
+      console.log(`${HINWEIS} Für die Sicherung fehlt noch ein privates Remote: git remote add origin <url> && git push -u origin HEAD`);
+    } else {
+      console.log(`${WARNUNG} Kein Git gefunden — dann regelmäßig: belegwerk sichern <ziel-außerhalb>`);
+    }
+
+    const heute = new Date();
+    const musterDatei = 'rechnungen/beispiel-erste-rechnung.json';
+    writeFileSync(musterDatei, JSON.stringify({
+      nummer: naechste({ nummern: { muster: 'RE-{jahr}-{nr}', breite: 3, start } }, 'register.csv', heute.getFullYear()),
+      datum: datumLang(heute),
+      empfaenger: { name: 'Musterkunde GmbH', adresse: 'Beispielgasse 2, 1010 Wien' },
+      leistungszeitraum: new Intl.DateTimeFormat('de-AT', { month: 'long', year: 'numeric' }).format(heute),
+      positionen: [{ text: 'Meine erste Leistung', beschreibung: 'Muster — Datei kopieren, anpassen, umbenennen', preis: 100 }],
+    }, null, 2) + '\n');
+    await ausstellen(musterDatei, mandant('.'));
+
+    console.log(`\n${fett('Fertig.')} Die nächsten Schritte:`);
+    console.log(`  1. ${grau('rechnungen/beispiel-erste-rechnung.pdf')} ansehen — so sehen deine Rechnungen aus.`);
+    console.log(`  2. Datei kopieren, echte Daten eintragen, als rechnungen/RE-….json speichern.`);
+    console.log(`  3. belegwerk rechnung rechnungen/RE-….json — setzt das PDF und führt das Register.`);
+    console.log(`  4. belegwerk pruefen · belegwerk offen · belegwerk stand — der Alltag.`);
+    console.log(grau('  Serverbetrieb (monatliche Rechnungen, Backups): deploy/SERVER.md im Werkzeug-Repo.'));
 
   } else if (befehl === 'pruefen') {
     const m = mandant();
@@ -436,7 +507,8 @@ try {
     console.log(`${fett('belegwerk')} — ${orange('Dateien. Belege. Nachweis.')}
 Rechnung und Register für kleine Unternehmen.
 
-  belegwerk init                     Mandanten-Ordner anlegen (firma.json)
+  belegwerk einrichten               Geführtes Onboarding: Fragen, Git, Muster-PDF
+  belegwerk init                     Nur das Gerüst anlegen (firma.json selbst füllen)
   belegwerk rechnung <datei.json>    Rechnung setzen + ins Register eintragen
   belegwerk storno <nummer>          Stornorechnung ausstellen (Original bleibt)
   belegwerk wiederkehrend [JJJJ-MM]  Monatsrechnungen aus wiederkehrend/ erzeugen

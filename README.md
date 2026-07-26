@@ -42,24 +42,33 @@ Schraubenzieher:
   alles in `firma.json`. Der Code ist offen (MIT): Das Register ist nur
   so viel wert, wie man dem Werkzeug glauben kann, das es führt.
 
-## Schnellstart
+## Selbst ausprobieren — fünf Minuten
 
 ```bash
-git clone <repo> && cd belegwerk && bun install
+git clone <repo> && cd belegwerk
+bun install && bun link      # macht den Befehl »belegwerk« global verfügbar
 
 mkdir ~/meine-firma && cd ~/meine-firma
-bun <pfad>/src/belegwerk.mjs init        # firma.json ausfüllen
-bun <pfad>/src/belegwerk.mjs rechnung rechnungen/RE-2026-001.json
+belegwerk einrichten         # das geführte Onboarding
 ```
 
-Oder erst das Beispiel ansehen: `bun run beispiel` setzt eine
-Muster-Rechnung mit gemischten Steuersätzen aus `beispiel/`.
+`einrichten` fragt die Firmendaten ab (Enter übernimmt Vorschläge),
+übernimmt auf Wunsch die Standardvorlage, legt ein Git-Repository als
+Backup-Fundament an — und setzt sofort eine **Muster-Rechnung als
+PDF**, damit man sieht, was man bekommt, bevor die erste echte Nummer
+vergeben ist. Danach: Muster-JSON kopieren, echte Daten eintragen,
+`belegwerk rechnung rechnungen/RE-….json`.
+
+Nur schauen, nichts anlegen: `bun run beispiel` (eine Muster-Rechnung
+aus `beispiel/`) oder `bun scripts/schaukasten.mjs` (alle Funktionen
+einmal, zum Durchblättern).
 
 ## Befehle
 
 | Befehl | Was er tut |
 |---|---|
-| `init` | Mandanten-Ordner anlegen (firma.json, rechnungen/, wiederkehrend/) |
+| `einrichten` | Geführtes Onboarding: Fragen, Standardvorlage, Git, Muster-PDF |
+| `init` | Nur das Gerüst — firma.json selbst ausfüllen |
 | `rechnung <datei.json>` | Rechnung prüfen, als PDF setzen, ins Register eintragen |
 | `storno <nummer>` | Stornorechnung mit eigener Nummer; das Original bleibt unangetastet |
 | `wiederkehrend [JJJJ-MM]` | Monatsrechnungen aus `wiederkehrend/`-Vorlagen — idempotent |
@@ -158,6 +167,10 @@ liegt unter [`brand/`](brand/).
    Arbeitshilfe, keine Buchhaltung.
 
 ## Auf dem Server
+
+Einrichtung in einem Schritt: `deploy/server-einrichten.sh
+<werkzeug-url> <mandant-url>` (als root) klont beide Repos, macht den
+Probelauf **vor** dem Timer und aktiviert den Monats-Timer samt Push.
 
 Kein Webdienst — kein Port, keine Anmeldung, keine Angriffsfläche. Auf
 dem Server ist belegwerk ein privates Git-Repo je Mandant, ein

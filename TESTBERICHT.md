@@ -1,6 +1,6 @@
 # Testbericht
 
-**Stand: 26. Juli 2026 · Version 0.10.0 · 84 Tests, 215 Assertions, 0 Fehler.**
+**Stand: 26. Juli 2026 · Version 0.11.0 · 88 Tests, 228 Assertions, 0 Fehler.**
 Dieser Bericht ist ein datierter Schnappschuss — die lebende Wahrheit ist
 `bun test`; drift dieser Bericht, gewinnt die Suite.
 
@@ -8,7 +8,7 @@ Dieser Bericht ist ein datierter Schnappschuss — die lebende Wahrheit ist
 
 | Lauf | Ergebnis |
 |---|---|
-| `bun test` | 84 / 84 grün, 215 Assertions, ~30 s |
+| `bun test` | 88 / 88 grün, 228 Assertions, ~35 s |
 | `bun test --coverage` | Bibliotheken 97,2 % Zeilen; nummern/register/stil 100 % |
 | `bun run beispiel` | Muster-PDF gesetzt, kein Registereintrag |
 | `bun scripts/schaukasten.mjs` | vollständiger Demo-Mandant, Register „Kette geschlossen, Nummernkreis dicht" |
@@ -46,6 +46,11 @@ Pfad-Traversal bei Import-Nummern und bei Logo/Schrift-Pfaden ·
 CSS-Injection über firma.json-Farben · Feldtrenner in Registerwerten ·
 NaN-Beträge · Sicherungsziel im Mandanten · keine Escape-Sequenzen
 ohne TTY.
+
+**Onboarding:** `einrichten` legt aus einem leeren Ordner alles an —
+Konfiguration aus Antworten, Standardvorlage, Git-Repo, Muster-PDF ohne
+Registereintrag · zweiter Lauf verweigert · ohne IBAN Abbruch ·
+server-einrichten.sh syntaxgeprüft.
 
 **Branding:** Tokens-Farben und Plex in der Standardvorlage ·
 vorlage/-Überschreibungen (CSS, Kopf, Fuß, Platzhalter) bis ins
