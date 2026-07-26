@@ -4,7 +4,20 @@
   "description": "Das einfachste Rechnungs- und Registerwerkzeug für kleine Unternehmen. Eine JSON je Rechnung, ein PDF, ein manipulationsevidentes Register. Kein Server, keine Datenbank, kein Abo.",
   "private": true,
   "type": "module",
-  "bin": { "belegwerk": "./src/belegwerk.mjs" },
-  "scripts": { "test": "bun test", "beispiel": "cd beispiel && bun ../src/belegwerk.mjs rechnung rechnungen/RE-2026-000.json" },
-  "dependencies": { "puppeteer": "^25.3.0" }
+  "bin": {
+    "belegwerk": "./src/belegwerk.mjs"
+  },
+  "scripts": {
+    "test": "bun test",
+    "beispiel": "cd beispiel && bun ../src/belegwerk.mjs rechnung rechnungen/RE-2026-000.json"
+  },
+  "dependencies": {
+    "puppeteer": "^25.3.0"
+  },
+  "license": "MIT",
+  "author": "Stoicera Group (https://stoicera.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Artaeon/belegwerk"
+  }
 }

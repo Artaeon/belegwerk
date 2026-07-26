@@ -342,7 +342,7 @@ try {
     console.log(`${OK} ${ziel} — ${zeilen.length} Rechnungen, ${eur.format(brutto)} € brutto.`);
 
   } else if (befehl === 'import' && arg) {
-    /* Altbestand übernehmen — der Umstieg von InvoiceNinja & Co. Die
+    /* Altbestand übernehmen — der Umstieg vom bisherigen Rechnungsprogramm. Die
        alten Rechnungen bleiben im alten System archiviert; das Register
        übernimmt Nummer, Datum, Empfänger und Brutto, damit Nummernkreis
        und Vollständigkeit über den Werkzeugwechsel hinweg stimmen.

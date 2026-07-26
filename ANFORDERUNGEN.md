@@ -2,7 +2,7 @@
 
 Geprüft am 29. Juli 2026 gegen den Stand der österreichischen Rechtslage
 (Quellen am Ende). **Dieses Register ist eine sorgfältige fachliche
-Einordnung, keine Rechtsberatung** — vor einem Umstieg von InvoiceNinja
+Einordnung, keine Rechtsberatung** — vor einem Umstieg vom bisherigen Rechnungsprogramm
 gehört es einmal mit der Steuerberatung durchgegangen; deren Freigabe
 ist der Stichtag, nicht dieses Dokument.
 
@@ -70,7 +70,7 @@ Jahresumsatz UND davon über 7.500 € bar. Sollte belegwerk je „Zahlung vor
 Ort" abbilden, ist das ein RKSV-Projekt (signierte Belege,
 Manipulationsschutz per Zertifikat) — bewusst außerhalb des Produkts.
 
-## 6. Was InvoiceNinja kann und belegwerk (noch) nicht
+## 6. Was klassische Rechnungsprogramme können und belegwerk (noch) nicht
 
 Keine Rechtspflichten, aber der ehrliche Produktvergleich:
 
@@ -82,7 +82,7 @@ Keine Rechtspflichten, aber der ehrliche Produktvergleich:
 - UVA-Zuarbeit (Kennzahlen je Quartal)
 - Kundenportal, Online-Zahlung
 
-**Empfehlung deshalb: Parallelbetrieb.** InvoiceNinja bleibt führend,
+**Empfehlung deshalb: Parallelbetrieb.** Das bisherige Programm bleibt führend,
 belegwerk stellt zunächst einzelne echte Rechnungen parallel aus (gleiche
 Nummernlogik, eigenes Register). Umgestellt wird zu einem Stichtag —
 Jahreswechsel bietet sich an — und erst, wenn die Steuerberatung die
@@ -90,8 +90,8 @@ belegwerk-Ausgabe geprüft und freigegeben hat.
 
 ## Fazit
 
-Für den heutigen Stoicera-Anwendungsfall — Inlandsrechnungen per
-Überweisung an Unternehmen und Gemeinden, Regelbesteuerung — erfüllt
+Für den typischen Anwendungsfall — Inlandsrechnungen per Überweisung
+an Unternehmen und Gemeinden, Regelbesteuerung — erfüllt
 belegwerk die **rechtlichen** Anforderungen an die Rechnungsausstellung;
 E-Rechnungspflicht besteht nur gegenüber dem Bund und ist per
 Portal-Handeingabe abdeckbar. Was fehlt, ist kein Rechtsproblem, sondern

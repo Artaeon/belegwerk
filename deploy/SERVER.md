@@ -4,19 +4,19 @@ Der Server-Betrieb ist bewusst **kein Webdienst**: kein Port, keine
 Anmeldung, keine Oberfläche — damit auch keine Angriffs- und
 DSGVO-Fläche. Auf dem Server heißt belegwerk: ein privates Git-Repo je
 Mandant, ein Timer, der monatlich die wiederkehrenden Rechnungen
-ausstellt, und Git als Sicherung. Genau das, was ein nerve-server schon
-kann.
+ausstellt, und Git als Sicherung — mehr braucht ein kleiner
+Firmenserver dafür nicht.
 
 ## Einrichtung
 
 ```bash
 # 1) Werkzeug und Mandant auf den Server
 git clone <belegwerk-repo>          /srv/belegwerk/belegwerk
-git clone <mandanten-repo>       /srv/belegwerk/stoicera     # firma.json, wiederkehrend/, register.csv
+git clone <mandanten-repo>       /srv/belegwerk/meine-firma     # firma.json, wiederkehrend/, register.csv
 cd /srv/belegwerk/belegwerk && bun install
 
 # 2) Probelauf
-cd /srv/belegwerk/stoicera
+cd /srv/belegwerk/meine-firma
 bun /srv/belegwerk/belegwerk/src/belegwerk.mjs pruefen
 ```
 
@@ -36,7 +36,7 @@ wird übersprungen — ein doppelt angestoßener Timer erzeugt keine
 doppelte Rechnung. Alternativ als Cron:
 
 ```
-0 6 1 * *  cd /srv/belegwerk/stoicera && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs wiederkehrend && git add -A && git commit -m "Monatsrechnungen $(date +\%Y-\%m)" && git push
+0 6 1 * *  cd /srv/belegwerk/meine-firma && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs wiederkehrend && git add -A && git commit -m "Monatsrechnungen $(date +\%Y-\%m)" && git push
 ```
 
 ## Sicherung — zwei Wege, mindestens einer Pflicht
@@ -49,7 +49,7 @@ doppelte Rechnung. Alternativ als Cron:
    für das zweite Medium — eine Sicherung auf derselben Platte ist keine.
 
 ```
-30 6 * * 0  cd /srv/belegwerk/stoicera && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs sichern /mnt/backup/belegwerk
+30 6 * * 0  cd /srv/belegwerk/meine-firma && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs sichern /mnt/backup/belegwerk
 ```
 
 Datenschutz dazu (verschlüsselte Ablage, Rollen nach DSGVO,
@@ -58,7 +58,7 @@ Löschfristen): [`../DATENSCHUTZ.md`](../DATENSCHUTZ.md).
 ## Jahreswechsel
 
 ```
-0 8 2 1 *  cd /srv/belegwerk/stoicera && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs export $(date -d "last year" +\%Y 2>/dev/null || date -v-1y +\%Y) && git add -A && git commit -m "Jahresexport" && git push
+0 8 2 1 *  cd /srv/belegwerk/meine-firma && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs export $(date -d "last year" +\%Y 2>/dev/null || date -v-1y +\%Y) && git add -A && git commit -m "Jahresexport" && git push
 ```
 
 Der Export des Vorjahres liegt dann unter `export/` — die CSV, die die
@@ -98,8 +98,8 @@ bun /srv/belegwerk/belegwerk/src/belegwerk.mjs pruefen           # Kette geschlo
 ## Wöchentliche Prüfung und Forderungsbericht (empfohlen)
 
 ```
-0 7 * * 1  cd /srv/belegwerk/stoicera && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs pruefen || echo "belegwerk: Registerprüfung fehlgeschlagen" | mail -s "belegwerk-Warnung" office@…
-5 7 * * 1  cd /srv/belegwerk/stoicera && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs offen | mail -s "belegwerk: offene Forderungen" office@…
+0 7 * * 1  cd /srv/belegwerk/meine-firma && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs pruefen || echo "belegwerk: Registerprüfung fehlgeschlagen" | mail -s "belegwerk-Warnung" office@…
+5 7 * * 1  cd /srv/belegwerk/meine-firma && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs offen | mail -s "belegwerk: offene Forderungen" office@…
 ```
 
 Der Bericht kommt per Mail — **gemahnt wird trotzdem von Hand**
