@@ -31,11 +31,30 @@ export function lesen(datei, firma) {
   if (!firma.kleinunternehmer && !firma.uid) fehlt.push('uid in firma.json — § 11 UStG verlangt die UID des Ausstellers');
   if (!firma.iban && !r.zahlung?.iban) fehlt.push('iban — in firma.json oder zahlung.iban');
 
+  /* Steuerregel. „normal" ist der Regelfall; die beiden Sonderfälle mit
+     Hinweispflicht nach § 11 UStG sind ausdrücklich benannt — alles
+     andere lehnt das Werkzeug ab, statt eine Rechnung ohne den
+     vorgeschriebenen Hinweis auszustellen. */
+  r.steuerregel = r.steuerregel ?? 'normal';
+  if (!['normal', 'reverse-charge', 'igl'].includes(r.steuerregel)) {
+    fehlt.push(`steuerregel „${r.steuerregel}" — zulässig sind normal, reverse-charge (§ 19: Übergang der Steuerschuld) oder igl (steuerfreie innergemeinschaftliche Lieferung)`);
+  }
+  const ohneUst = firma.kleinunternehmer || r.steuerregel !== 'normal';
+  if (r.steuerregel === 'reverse-charge' && !r.empfaenger?.uid) {
+    fehlt.push('empfaenger.uid — Reverse Charge verlangt die UID des Leistungsempfängers');
+  }
+  if (r.steuerregel === 'igl' && (!r.empfaenger?.uid || !firma.uid)) {
+    fehlt.push('empfaenger.uid und firma.uid — die ig Lieferung verlangt beide UIDs');
+  }
+  if (firma.kleinunternehmer && r.steuerregel !== 'normal') {
+    fehlt.push('steuerregel — Kleinunternehmer stellen weder Reverse-Charge- noch igl-Rechnungen in diesem Werkzeug aus; das gehört zur Steuerberatung');
+  }
+
   const netto = (r.positionen ?? []).reduce((s, p) => s + p.preis * (p.menge ?? 1), 0);
 
-  /* USt je Satz gruppieren. Beim Kleinunternehmer gibt es keine. */
+  /* USt je Satz gruppieren — entfällt bei Kleinunternehmer und Sonderregeln. */
   const saetze = new Map();
-  if (!firma.kleinunternehmer) {
+  if (!ohneUst) {
     for (const p of r.positionen ?? []) {
       const satz = p.ustSatz ?? 20;
       if (![20, 13, 10, 0].includes(satz)) fehlt.push(`ustSatz ${satz} — zulässig sind 20, 13, 10 oder 0`);
@@ -45,7 +64,8 @@ export function lesen(datei, firma) {
   const ust = rund([...saetze.entries()].reduce((s, [satz, basis]) => s + basis * (satz / 100), 0));
   const brutto = rund(netto + ust);
 
-  if (brutto > 10000 && !r.empfaenger?.uid) {
+  /* Absolutbetrag: Auch die Stornorechnung über -12.000 € braucht die UID. */
+  if (Math.abs(brutto) > 10000 && !r.empfaenger?.uid) {
     fehlt.push('empfaenger.uid — über 10.000 € brutto verlangt § 11 UStG die UID des Empfängers');
   }
   if (fehlt.length) throw new Error('Rechnung unvollständig, nichts erzeugt:\n  · ' + fehlt.join('\n  · '));
@@ -70,9 +90,17 @@ export async function setzen(r, firma, pdfPfad) {
   <td class="r">${eur.format(p.preis * (p.menge ?? 1))} €</td>
 </tr>`).join('\n');
 
-  const ustZeilen = firma.kleinunternehmer
-    ? ''
-    : [...r.saetze.entries()].map(([satz, basis]) => `<tr><td></td><td colspan="3">Umsatzsteuer ${satz} %</td><td class="r">${eur.format(rund(basis * satz / 100))} €</td></tr>`).join('\n');
+  const ustZeilen = [...r.saetze.entries()].map(([satz, basis]) => `<tr><td></td><td colspan="3">Umsatzsteuer ${satz} %</td><td class="r">${eur.format(rund(basis * satz / 100))} €</td></tr>`).join('\n');
+
+  /* Die vorgeschriebenen Hinweise der Sonderfälle — sie stehen auf der
+     Rechnung, nicht in einer Doku. */
+  const steuerHinweis = firma.kleinunternehmer
+    ? 'Umsatzsteuerfrei gemäß § 6 Abs 1 Z 27 UStG (Kleinunternehmerregelung).'
+    : r.steuerregel === 'reverse-charge'
+      ? 'Übergang der Steuerschuld auf den Leistungsempfänger (Reverse Charge, § 19 UStG bzw. Art. 196 MwStSyst-RL).'
+      : r.steuerregel === 'igl'
+        ? 'Steuerfreie innergemeinschaftliche Lieferung (Art. 6 Abs 1 UStG).'
+        : '';
 
   const html = seite(firma, `Rechnung ${r.nummer}`, `Rechnung ${esc(r.nummer)} · ${esc(r.datum)}${r.muster ? ' · MUSTER' : ''}`, `
 <h1>Rechnung ${esc(r.nummer)}${r.muster ? ' — Muster, ohne Rechtswirkung' : ''}</h1>
@@ -89,11 +117,11 @@ ${r.referenz ? `<tr><th>Referenz</th><td>${esc(r.referenz)}</td></tr>` : ''}
 <table class="pos">
 <tr><th>Pos.</th><th>Leistung</th><th class="r">Menge</th><th class="r">Einzelpreis</th><th class="r">Betrag</th></tr>
 ${positionen}
-<tr><td></td><td colspan="3">Summe${firma.kleinunternehmer ? '' : ' netto'}</td><td class="r">${eur.format(r.netto)} €</td></tr>
+<tr><td></td><td colspan="3">Summe${r.saetze.size ? ' netto' : ''}</td><td class="r">${eur.format(r.netto)} €</td></tr>
 ${ustZeilen}
 <tr class="summe"><td></td><td colspan="3">Rechnungsbetrag</td><td class="r">${eur.format(r.brutto)} €</td></tr>
 </table>
-${firma.kleinunternehmer ? '<p>Umsatzsteuerfrei gemäß § 6 Abs 1 Z 27 UStG (Kleinunternehmerregelung).</p>' : ''}
+${steuerHinweis ? `<p>${steuerHinweis}</p>` : ''}
 
 <h2>Zahlung</h2>
 <p>Zahlbar ohne Abzug binnen <strong>${esc(r.zahlung?.ziel ?? '14 Tagen ab Rechnungsdatum')}</strong>
