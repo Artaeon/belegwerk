@@ -46,11 +46,19 @@ Schraubenzieher:
 
 ```bash
 git clone <repo> && cd belegwerk
-bun install && bun link      # macht den Befehl »belegwerk« global verfügbar
+bun install && bun link      # registriert den Befehl »belegwerk«
+
+# Einmalig, falls »which belegwerk« nichts findet: buns Bin-Ordner in
+# den PATH — bun link legt den Befehl dort ab, sagt es aber nicht dazu.
+echo 'export PATH="$HOME/.bun/bin:$PATH"' >> ~/.zshrc && exec zsh
 
 mkdir ~/meine-firma && cd ~/meine-firma
 belegwerk einrichten         # das geführte Onboarding
 ```
+
+Stolperfalle: `bun link belegwerk` (mit Namen) in einem anderen Ordner
+installiert nur eine Projekt-Abhängigkeit dorthin — der globale Befehl
+kommt allein vom `bun link` im Werkzeug-Repo plus PATH.
 
 `einrichten` fragt die Firmendaten ab (Enter übernimmt Vorschläge),
 übernimmt auf Wunsch die Standardvorlage, legt ein Git-Repository als
