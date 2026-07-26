@@ -49,8 +49,13 @@ doppelte Rechnung. Alternativ als Cron:
   (BAO: 7 Jahre). Ein Server ohne Remote ist ein einzelner Ort — und
   ein einzelner Ort ist keine Aufbewahrung.
 
-## Wöchentliche Prüfung (empfohlen)
+## Wöchentliche Prüfung und Forderungsbericht (empfohlen)
 
 ```
 0 7 * * 1  cd /srv/kontor/stoicera && bun /srv/kontor/kontor/src/kontor.mjs pruefen || echo "kontor: Registerprüfung fehlgeschlagen" | mail -s "kontor-Warnung" office@…
+5 7 * * 1  cd /srv/kontor/stoicera && bun /srv/kontor/kontor/src/kontor.mjs offen | mail -s "kontor: offene Forderungen" office@…
 ```
+
+Der Bericht kommt per Mail — **gemahnt wird trotzdem von Hand**
+(`kontor mahnung <nummer>`): Der Server erinnert den Menschen, nicht
+den Kunden.

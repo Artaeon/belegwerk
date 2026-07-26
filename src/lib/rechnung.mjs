@@ -134,10 +134,15 @@ ${r.hinweis ? `<p>${esc(r.hinweis)}</p>` : ''}
 Sie ist im Rechnungsregister des Ausstellers hinterlegt — Rechnung und Register belegen einander.</div>
 `);
 
+  await pdf(html, pdfPfad);
+}
+
+/** HTML → A4-PDF. Auch Mahnungen und künftige Dokumente laufen hier durch. */
+export async function pdf(html, pfad) {
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
   await page.emulateMediaType('print');
   await page.setContent(html, { waitUntil: 'networkidle0' });
-  await page.pdf({ path: pdfPfad, format: 'A4', printBackground: true, margin: { top: '16mm', right: '15mm', bottom: '14mm', left: '15mm' } });
+  await page.pdf({ path: pfad, format: 'A4', printBackground: true, margin: { top: '16mm', right: '15mm', bottom: '14mm', left: '15mm' } });
   await browser.close();
 }

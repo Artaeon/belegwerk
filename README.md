@@ -5,8 +5,11 @@ Unternehmen, eine JSON-Datei ist eine Rechnung, ein Befehl setzt das PDF
 und führt das Register. Kein Server, keine Datenbank, kein Konto, kein
 Abo — Dateien, die man versteht, und Git als Prüfpfad.
 
-> Arbeitstitel. Vor einem öffentlichen Rollout gilt dasselbe wie beim
-> Stoicera-Zeichen: Ähnlichkeits- und Markensuche zuerst.
+> **Der Name „kontor" ist Arbeitstitel und kollidiert:** „Stotax Kontor"
+> ist eine etablierte deutsche Buchhaltungssoftware — dieselbe Klasse,
+> derselbe Markt (Desk-Review 26.07.2026). Vor einem Rollout braucht es
+> einen eigenständigen Namen samt Register-Prüfung; Kandidat:
+> **belegwerk** (npm frei, keine Software dieses Namens gefunden).
 
 ```
 bun install
@@ -14,6 +17,12 @@ bun src/kontor.mjs init                      # Mandanten-Ordner anlegen
 bun src/kontor.mjs rechnung <datei.json>     # Rechnung setzen + eintragen
 bun src/kontor.mjs storno <nummer>           # Stornorechnung (Original bleibt)
 bun src/kontor.mjs wiederkehrend [JJJJ-MM]   # Monatsrechnungen aus wiederkehrend/
+bun src/kontor.mjs bezahlt <nummer> [datum]  # Zahlungseingang vermerken
+bun src/kontor.mjs offen                     # offene Forderungen mit Fälligkeit
+bun src/kontor.mjs mahnung <nummer>          # Zahlungserinnerung/Mahnung als PDF
+bun src/kontor.mjs konto <betrag> [datum]    # Kontostand manuell festhalten
+bun src/kontor.mjs ausgabe <betrag> <text> [kategorie]   # Ausgabe notieren
+bun src/kontor.mjs stand                     # Überblick: Konto, offen, Jahr, Ziele
 bun src/kontor.mjs pruefen                   # Registerkette + Nummernkreis prüfen
 ```
 
@@ -54,6 +63,21 @@ derselben Rechnung wird verweigert.
 (ohne Nummer und Datum — die vergibt der Nummernkreis), ein Timer ruft
 monatlich `kontor wiederkehrend`. Der Lauf ist idempotent: Was schon
 ausgestellt ist, wird übersprungen. Siehe `deploy/SERVER.md`.
+
+**Offene Forderungen und Mahnwesen.** `bezahlt` vermerkt den
+Zahlungseingang in der Rechnungs-JSON (außerhalb des Datenhashs — der
+Zustand ändert sich, die ausgestellte Rechnung nicht). `offen` zeigt
+alles Unbezahlte mit Fälligkeit, `mahnung` setzt die
+Zahlungserinnerung — Stufe 1 freundlich, ab Stufe 2 mit den
+gesetzlichen Folgen (§ 456/458 UGB). Vor Fälligkeit gibt es keine
+Mahnung, und **versendet wird von Hand**: Ein Automat, der
+unbeaufsichtigt mahnt, beschädigt Kundenbeziehungen schneller, als er
+Forderungen eintreibt.
+
+**Überblick, ehrlich eingeordnet.** `konto` hält den Bankstand manuell
+fest, `ausgabe` notiert Ausgaben, `ziele.json` nennt Sparziele,
+`stand` zeigt alles auf einen Blick. Das ist eine Arbeitshilfe, keine
+Buchhaltung — die Zahlen sind so gut wie ihre Pflege.
 
 **Das Register ist manipulationsevident.** Jede Rechnung steht mit
 SHA-256-Prüfsumme im Register; jede Zeile ist mit der vorigen verkettet.

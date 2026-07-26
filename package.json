@@ -1,6 +1,6 @@
 {
   "name": "kontor",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Das einfachste Rechnungs- und Registerwerkzeug für kleine Unternehmen. Eine JSON je Rechnung, ein PDF, ein manipulationsevidentes Register. Kein Server, keine Datenbank, kein Abo.",
   "private": true,
   "type": "module",

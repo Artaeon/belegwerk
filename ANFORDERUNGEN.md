@@ -48,7 +48,8 @@ Prüfsumme auf der Rechnung geht darüber hinaus.
 |---|---|---|
 | **Bund** (Bundesdienststellen) | Ja, seit 2014: ebInterface oder Peppol BIS über USP / e-rechnung.gv.at | ✗ kein strukturiertes Format. Übergangsweg: die **manuelle Web-Erfassung auf e-rechnung.gv.at** — für gelegentliche Bundesaufträge zulässig und ausreichend |
 | **Länder und Gemeinden** | Nein — freiwillig, viele akzeptieren Peppol | — PDF genügt; unsere Gemeinden betrifft keine Pflicht |
-| **B2B Inland** | Nein (Stand Juli 2026, anders als Deutschland) | — PDF genügt |
+| **B2B Inland** | Nein (Stand Juli 2026, anders als Deutschland). Eine nationale Einführung ab ~2027 wird diskutiert, ist aber **nicht beschlossen** — beobachten | — PDF genügt |
+| **B2C** (Privatkunden) | Nein — nirgends, auch ViDA betrifft B2C nicht | — Papier oder PDF genügt |
 | **Innergemeinschaftlich (ViDA)** | Ab **1. Juli 2030**: strukturierte E-Rechnung (EN 16931) + digitale Meldung | ✗ Roadmap — ebInterface/UBL-Ausgabe ist das wichtigste künftige Feature, wenn EU-Kunden kommen oder Österreich national nachzieht |
 
 ## 4. Aufzeichnungen und Aufbewahrung (BAO)
@@ -75,7 +76,8 @@ Keine Rechtspflichten, aber der ehrliche Produktvergleich:
 
 - ~~Storno/Gutschrift~~ → `kontor storno`, seit v0.2
 - ~~Wiederkehrende Rechnungen~~ → `kontor wiederkehrend` + Server-Timer, seit v0.2
-- Zahlungsstatus (offen/bezahlt) und Mahnwesen
+- ~~Zahlungsstatus und Mahnwesen~~ → `bezahlt` / `offen` / `mahnung`, seit v0.3
+  (Mahnstufen mit § 456/458 UGB; Versand bewusst von Hand)
 - UVA-Zuarbeit (Kennzahlen je Quartal) und Export für die Steuerberatung (BMD)
 - Kundenportal, Online-Zahlung
 
