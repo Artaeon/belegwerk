@@ -1,17 +1,17 @@
 #!/usr/bin/env bun
 /**
- * kontor — Rechnung und Register für kleine Unternehmen.
+ * belegwerk — Rechnung und Register für kleine Unternehmen.
  *
  * Ein Ordner ist ein Unternehmen (Mandant): firma.json, daneben das
  * Register, darunter die Rechnungen. Kein Server, keine Datenbank,
  * kein Konto — Dateien, die man versteht, und Git als Prüfpfad.
  * Auf einem Server heißt Betrieb: Cron ruft `wiederkehrend`, Git sichert.
  *
- *   kontor init                     Mandanten-Ordner anlegen
- *   kontor rechnung <datei.json>    Rechnung setzen + eintragen
- *   kontor storno <nummer>          Stornorechnung zur Nummer ausstellen
- *   kontor wiederkehrend [JJJJ-MM]  Monatsrechnungen aus wiederkehrend/
- *   kontor pruefen                  Registerkette + Nummernkreis prüfen
+ *   belegwerk init                     Mandanten-Ordner anlegen
+ *   belegwerk rechnung <datei.json>    Rechnung setzen + eintragen
+ *   belegwerk storno <nummer>          Stornorechnung zur Nummer ausstellen
+ *   belegwerk wiederkehrend [JJJJ-MM]  Monatsrechnungen aus wiederkehrend/
+ *   belegwerk pruefen                  Registerkette + Nummernkreis prüfen
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
@@ -39,7 +39,7 @@ function firmaFinden(von) {
 function mandant(von = '.') {
   const fund = firmaFinden(von);
   if (!fund) {
-    console.error('✗ Keine firma.json gefunden — bin ich im Mandanten-Ordner? Zuerst: kontor init');
+    console.error('✗ Keine firma.json gefunden — bin ich im Mandanten-Ordner? Zuerst: belegwerk init');
     process.exit(1);
   }
   return { ...fund, register: join(fund.wurzel, 'register.csv') };
@@ -133,7 +133,7 @@ try {
     }, null, 2) + '\n');
     mkdirSync('rechnungen', { recursive: true });
     mkdirSync('wiederkehrend', { recursive: true });
-    console.log('✓ firma.json, rechnungen/ und wiederkehrend/ angelegt.\n  Firmendaten eintragen, dann: kontor rechnung rechnungen/RE-….json');
+    console.log('✓ firma.json, rechnungen/ und wiederkehrend/ angelegt.\n  Firmendaten eintragen, dann: belegwerk rechnung rechnungen/RE-….json');
 
   } else if (befehl === 'pruefen') {
     const m = mandant();
@@ -243,7 +243,7 @@ try {
       const frist = o.verzug > 0 ? `überfällig seit ${o.verzug} Tagen` : `fällig in ${-o.verzug} Tagen`;
       console.log(`${o.verzug > 0 ? '✗' : '·'} ${o.r.nummer}  ${eur.format(o.brutto).padStart(12)} €  ${o.r.empfaenger.name} — ${frist}${stufe}`);
     }
-    console.log(`\n${liste.length} offen, zusammen ${eur.format(summe)} €. Vermerken mit: kontor bezahlt <nummer> [datum]`);
+    console.log(`\n${liste.length} offen, zusammen ${eur.format(summe)} €. Vermerken mit: belegwerk bezahlt <nummer> [datum]`);
 
   } else if (befehl === 'mahnung' && arg) {
     const m = mandant();
@@ -305,7 +305,7 @@ try {
     const offenSumme = off.reduce((s, o) => s + o.brutto, 0);
 
     console.log(`── ${m.firma.name} · Stand ${iso(new Date())} ${'─'.repeat(20)}`);
-    console.log(`Kontostand           ${konto ? `${konto[1].padStart(12)} €  (${konto[0]}, manuell)` : '— nie festgehalten (kontor konto <betrag>)'}`);
+    console.log(`Kontostand           ${konto ? `${konto[1].padStart(12)} €  (${konto[0]}, manuell)` : '— nie festgehalten (belegwerk konto <betrag>)'}`);
     console.log(`Offene Forderungen   ${eur.format(offenSumme).padStart(12)} €  (${off.length} Rechnungen${off.filter((o) => o.verzug > 0).length ? `, davon ${off.filter((o) => o.verzug > 0).length} überfällig` : ''})`);
     console.log(`Ausgestellt ${jahr}     ${eur.format(ausgestellt).padStart(12)} €  (Register, inkl. Storni)`);
     console.log(`Ausgaben ${jahr}        ${eur.format(ausgabenSumme).padStart(12)} €  (${ausgaben.length} ${ausgaben.length === 1 ? 'Eintrag' : 'Einträge'}, manuell)`);
@@ -321,19 +321,19 @@ try {
     console.log('\nDie Übersicht ist eine Arbeitshilfe, keine Buchhaltung — was zählt, sind Register und Belege.');
 
   } else {
-    console.log(`kontor — Rechnung und Register für kleine Unternehmen
+    console.log(`belegwerk — Rechnung und Register für kleine Unternehmen
 
-  kontor init                     Mandanten-Ordner anlegen (firma.json)
-  kontor rechnung <datei.json>    Rechnung setzen + ins Register eintragen
-  kontor storno <nummer>          Stornorechnung ausstellen (Original bleibt)
-  kontor wiederkehrend [JJJJ-MM]  Monatsrechnungen aus wiederkehrend/ erzeugen
-  kontor bezahlt <nummer> [datum] Zahlungseingang vermerken
-  kontor offen                    Offene Forderungen mit Fälligkeit
-  kontor mahnung <nummer>         Zahlungserinnerung/Mahnung als PDF
-  kontor konto <betrag> [datum]   Kontostand manuell festhalten
-  kontor ausgabe <betrag> <text> [kategorie]   Ausgabe notieren
-  kontor stand                    Überblick: Konto, offen, Jahr, Ziele
-  kontor pruefen                  Registerkette + Nummernkreis verifizieren
+  belegwerk init                     Mandanten-Ordner anlegen (firma.json)
+  belegwerk rechnung <datei.json>    Rechnung setzen + ins Register eintragen
+  belegwerk storno <nummer>          Stornorechnung ausstellen (Original bleibt)
+  belegwerk wiederkehrend [JJJJ-MM]  Monatsrechnungen aus wiederkehrend/ erzeugen
+  belegwerk bezahlt <nummer> [datum] Zahlungseingang vermerken
+  belegwerk offen                    Offene Forderungen mit Fälligkeit
+  belegwerk mahnung <nummer>         Zahlungserinnerung/Mahnung als PDF
+  belegwerk konto <betrag> [datum]   Kontostand manuell festhalten
+  belegwerk ausgabe <betrag> <text> [kategorie]   Ausgabe notieren
+  belegwerk stand                    Überblick: Konto, offen, Jahr, Ziele
+  belegwerk pruefen                  Registerkette + Nummernkreis verifizieren
 
 Ein Ordner ist ein Unternehmen. Dateien statt Datenbank, Git als Prüfpfad.
 Ziele: ziele.json im Mandanten-Ordner — [{ "text": "Rücklage", "betrag": 10000 }]`);

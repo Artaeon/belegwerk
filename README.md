@@ -1,125 +1,143 @@
-# kontor
+# belegwerk
 
-**Rechnung und Register für kleine Unternehmen.** Ein Ordner ist ein
-Unternehmen, eine JSON-Datei ist eine Rechnung, ein Befehl setzt das PDF
-und führt das Register. Kein Server, keine Datenbank, kein Konto, kein
-Abo — Dateien, die man versteht, und Git als Prüfpfad.
-
-> **Der Name „kontor" ist Arbeitstitel und kollidiert:** „Stotax Kontor"
-> ist eine etablierte deutsche Buchhaltungssoftware — dieselbe Klasse,
-> derselbe Markt (Desk-Review 26.07.2026). Vor einem Rollout braucht es
-> einen eigenständigen Namen samt Register-Prüfung; Kandidat:
-> **belegwerk** (npm frei, keine Software dieses Namens gefunden).
+**Das einfachste Rechnungswerkzeug für österreichische kleine
+Unternehmen.** Ein Ordner ist dein Unternehmen, eine JSON-Datei ist eine
+Rechnung, ein Befehl setzt das PDF und führt ein manipulationsevidentes
+Register. Kein Server-Zwang, keine Datenbank, kein Konto, kein Abo —
+Dateien, die man versteht, und Git als Prüfpfad.
 
 ```
-bun install
-bun src/kontor.mjs init                      # Mandanten-Ordner anlegen
-bun src/kontor.mjs rechnung <datei.json>     # Rechnung setzen + eintragen
-bun src/kontor.mjs storno <nummer>           # Stornorechnung (Original bleibt)
-bun src/kontor.mjs wiederkehrend [JJJJ-MM]   # Monatsrechnungen aus wiederkehrend/
-bun src/kontor.mjs bezahlt <nummer> [datum]  # Zahlungseingang vermerken
-bun src/kontor.mjs offen                     # offene Forderungen mit Fälligkeit
-bun src/kontor.mjs mahnung <nummer>          # Zahlungserinnerung/Mahnung als PDF
-bun src/kontor.mjs konto <betrag> [datum]    # Kontostand manuell festhalten
-bun src/kontor.mjs ausgabe <betrag> <text> [kategorie]   # Ausgabe notieren
-bun src/kontor.mjs stand                     # Überblick: Konto, offen, Jahr, Ziele
-bun src/kontor.mjs pruefen                   # Registerkette + Nummernkreis prüfen
+rechnungen/RE-2026-014.json  ──▶  belegwerk rechnung  ──▶  RE-2026-014.pdf
+                                        │
+                                        ▼
+                              register.csv (SHA-256-Kette)
 ```
 
-Beispiel ansehen: `bun run beispiel` — setzt `beispiel/rechnungen/RE-2026-000.pdf`
-aus dem Beispiel-Mandanten (als Muster gekennzeichnet, ohne Registereintrag).
+## Warum belegwerk
 
-## Warum es das gibt
-
-Für ein kleines Unternehmen mit einer Handvoll Rechnungen im Monat ist
-ein Buchhaltungsprogramm ein Werkzeugkasten, von dem man einen
+Für ein Unternehmen mit einer Handvoll Rechnungen im Monat ist ein
+Buchhaltungsprogramm ein Werkzeugkasten, von dem man einen
 Schraubenzieher benutzt — dafür zahlt man monatlich, pflegt ein Konto
-und gibt seine Belege in eine fremde Datenbank. kontor ist der
-Schraubenzieher: Rechnungen ausstellen, korrekt und nachweisbar.
+und legt seine Belege in eine fremde Datenbank. belegwerk ist der
+Schraubenzieher:
 
-## Wie es arbeitet
+- **Korrekt per Konstruktion.** Die Pflichtangaben nach § 11 UStG sind
+  Felder, keine Konvention. Fehlt eine, bricht das Werkzeug mit der
+  vollständigen Liste — statt still eine unvollständige Rechnung
+  auszustellen.
+- **Nachweisbar per Konstruktion.** Jede Rechnung steht mit
+  SHA-256-Prüfsumme im Register, jede Zeile ist mit der vorigen
+  verkettet. Eine nachträglich geänderte oder gelöschte Zeile bricht die
+  Kette aller folgenden. Die Prüfsumme steht auch auf der Rechnung:
+  PDF und Register belegen einander.
+- **100 % deins.** Firmendaten, Logo, Farben, Nummernkreis, Mahnfrist —
+  alles in `firma.json`. Der Code ist offen (MIT): Das Register ist nur
+  so viel wert, wie man dem Werkzeug glauben kann, das es führt.
 
-**Ein Ordner ist ein Mandant.** `firma.json` hält Name, Adresse, UID,
-IBAN, optional Logo und Farben. Daneben `register.csv`, darunter die
-Rechnungen — auch in Unterordnern je Jahr; kontor sucht die firma.json
-vom Rechnungsordner aufwärts.
+## Schnellstart
 
-**Pflichtangaben sind Felder, keine Konvention.** § 11 UStG verlangt
-fortlaufende Nummer, Ausstellungsdatum, Leistungszeitraum, UID des
-Ausstellers, ab 10.000 € brutto die UID des Empfängers. Fehlt etwas,
-bricht kontor mit der vollständigen Liste — statt still eine
-unvollständige Rechnung auszustellen. Steuersätze je Position
-(20/13/10 %), Kleinunternehmerregelung (§ 6 Abs 1 Z 27 UStG),
-Reverse Charge (§ 19) und die steuerfreie innergemeinschaftliche
-Lieferung — jeweils mit dem vorgeschriebenen Hinweis auf der Rechnung.
-Unbekannte Steuerregeln lehnt kontor ab, statt den Hinweis wegzulassen.
+```bash
+git clone <repo> && cd belegwerk && bun install
 
-**Storniert wird, nie geändert.** `kontor storno` stellt eine
-Gegenrechnung mit eigener Nummer und negierten Beträgen aus; das
-Original bleibt unangetastet in Register und Ablage. Ein zweiter Storno
-derselben Rechnung wird verweigert.
+mkdir ~/meine-firma && cd ~/meine-firma
+bun <pfad>/src/belegwerk.mjs init        # firma.json ausfüllen
+bun <pfad>/src/belegwerk.mjs rechnung rechnungen/RE-2026-001.json
+```
 
-**Wiederkehrendes stellt der Server aus.** Vorlagen in `wiederkehrend/`
-(ohne Nummer und Datum — die vergibt der Nummernkreis), ein Timer ruft
-monatlich `kontor wiederkehrend`. Der Lauf ist idempotent: Was schon
-ausgestellt ist, wird übersprungen. Siehe `deploy/SERVER.md`.
+Oder erst das Beispiel ansehen: `bun run beispiel` setzt eine
+Muster-Rechnung mit gemischten Steuersätzen aus `beispiel/`.
 
-**Offene Forderungen und Mahnwesen.** `bezahlt` vermerkt den
-Zahlungseingang in der Rechnungs-JSON (außerhalb des Datenhashs — der
-Zustand ändert sich, die ausgestellte Rechnung nicht). `offen` zeigt
-alles Unbezahlte mit Fälligkeit, `mahnung` setzt die
-Zahlungserinnerung — Stufe 1 freundlich, ab Stufe 2 mit den
-gesetzlichen Folgen (§ 456/458 UGB). Vor Fälligkeit gibt es keine
-Mahnung, und **versendet wird von Hand**: Ein Automat, der
-unbeaufsichtigt mahnt, beschädigt Kundenbeziehungen schneller, als er
-Forderungen eintreibt.
+## Befehle
 
-**Überblick, ehrlich eingeordnet.** `konto` hält den Bankstand manuell
-fest, `ausgabe` notiert Ausgaben, `ziele.json` nennt Sparziele,
-`stand` zeigt alles auf einen Blick. Das ist eine Arbeitshilfe, keine
-Buchhaltung — die Zahlen sind so gut wie ihre Pflege.
+| Befehl | Was er tut |
+|---|---|
+| `init` | Mandanten-Ordner anlegen (firma.json, rechnungen/, wiederkehrend/) |
+| `rechnung <datei.json>` | Rechnung prüfen, als PDF setzen, ins Register eintragen |
+| `storno <nummer>` | Stornorechnung mit eigener Nummer; das Original bleibt unangetastet |
+| `wiederkehrend [JJJJ-MM]` | Monatsrechnungen aus `wiederkehrend/`-Vorlagen — idempotent |
+| `bezahlt <nummer> [datum]` | Zahlungseingang vermerken |
+| `offen` | Offene Forderungen mit Fälligkeit, Überfällige zuerst |
+| `mahnung <nummer>` | Zahlungserinnerung/Mahnung als PDF — nie vor Fälligkeit |
+| `konto <betrag> [datum]` | Kontostand manuell festhalten |
+| `ausgabe <betrag> <text> [kategorie]` | Ausgabe notieren |
+| `stand` | Überblick: Konto, offene Forderungen, Jahressummen, Ziele |
+| `pruefen` | Registerkette und Nummernkreis verifizieren |
 
-**Das Register ist manipulationsevident.** Jede Rechnung steht mit
-SHA-256-Prüfsumme im Register; jede Zeile ist mit der vorigen verkettet.
-Eine nachträglich geänderte oder gelöschte Zeile bricht die Kette aller
-folgenden — `pruefen` findet das. Die Prüfsumme steht auch auf der
-Rechnung selbst: PDF und Register belegen einander. Ausgestellte
-Rechnungen werden nie geändert; dieselbe Nummer mit anderen Daten wird
-verweigert, **bevor** ein PDF entsteht — stornieren und neu ausstellen.
+## Eine Rechnung
 
-**Aufbewahrung erledigt Git.** Die BAO verlangt sieben Jahre — ein
-Mandanten-Ordner unter Git-Versionierung hat die Historie nebenbei, als
-zweiten, unabhängigen Prüfpfad neben der Hash-Kette.
+```json
+{
+  "nummer": "RE-2026-014",
+  "datum": "2026-07-29",
+  "empfaenger": { "name": "Musterkunde GmbH", "adresse": "Beispielgasse 2, 1010 Wien" },
+  "leistungszeitraum": "Juli 2026",
+  "positionen": [
+    { "text": "Website-Relaunch", "preis": 8400 },
+    { "text": "Fachbuch", "menge": 2, "preis": 39, "ustSatz": 10 }
+  ]
+}
+```
 
-## Was es bewusst nicht ist
+- Steuersätze je Position: 20 (Standard), 13, 10, 0
+- `"steuerregel": "reverse-charge"` (§ 19) oder `"igl"` (steuerfreie
+  ig Lieferung) — der vorgeschriebene Hinweis landet auf der Rechnung,
+  die nötigen UIDs werden erzwungen. Unbekannte Regeln lehnt belegwerk ab.
+- `"kleinunternehmer": true` in firma.json → keine USt, § 6-Hinweis
+- `"muster": true` (oder „beispiel" im Dateinamen) → als Muster
+  gekennzeichnet, kein Registereintrag
+- Ab 10.000 € brutto verlangt § 11 UStG die UID des Empfängers —
+  belegwerk auch, selbst beim Storno über −10.000 €.
 
-- **Keine Registrierkasse.** Die RKSV betrifft Barumsätze; kontor stellt
-  Rechnungen auf Überweisung aus. Wer bar kassiert, braucht eine
-  signaturpflichtige Kasse — das ist ein anderes Produkt.
-- **Keine Doppik, kein Jahresabschluss, kein FinanzOnline.** Der
-  Steuerberater bekommt lesbare Dateien, keine Schnittstelle — noch.
-- **Keine Steuerberatung.** kontor erzwingt die Form, nicht die
-  steuerliche Richtigkeit des Inhalts.
+## Die Regeln, die das Werkzeug durchsetzt
 
-## Woher es kommt
+1. **Eine ausgestellte Rechnung wird nie geändert.** Dieselbe Nummer mit
+   anderen Daten wird verweigert, bevor ein PDF entsteht — storniert und
+   neu ausgestellt wird stattdessen.
+2. **Nummern kommen aus dem Register**, nicht aus einem zweiten Zähler,
+   der auseinanderlaufen könnte. `pruefen` findet Doppel und Lücken.
+3. **Gemahnt wird nie vor Fälligkeit**, und versendet wird von Hand —
+   der Server erinnert den Menschen, nicht den Kunden.
+4. **Der Überblick ordnet sich selbst ein**: `stand` ist eine
+   Arbeitshilfe, keine Buchhaltung.
 
-Entstanden aus dem Rechnungs-Skript des Stoicera-Branding-Kits;
-verallgemeinert: Branding und Firmendaten kommen aus der Konfiguration,
-nicht aus dem Code. Erster Mandant ist die Stoicera Group selbst —
-das Werkzeug wird zuerst am eigenen Unternehmen bewiesen, wie fleetdeck
-und nerve auch.
+## Auf dem Server
 
-## Mögliche nächste Schritte
+Kein Webdienst — kein Port, keine Anmeldung, keine Angriffsfläche. Auf
+dem Server ist belegwerk ein privates Git-Repo je Mandant, ein
+systemd-Timer stellt am Monatsersten die wiederkehrenden Rechnungen aus
+und pusht; der Push ins Remote **ist** die 7-Jahre-Aufbewahrung (BAO).
+Ein Wochen-Cron mailt Registerprüfung und Forderungsbericht. Anleitung
+und Unit-Dateien: [`deploy/SERVER.md`](deploy/SERVER.md).
 
-- `kontor einnahmen` — Einnahmenliste aus dem Register je Zeitraum (E/A-Rechnung als Vorstufe)
-- Zahlungsstatus (offen/bezahlt) und Zahlungserinnerung
-- Belege der Ausgabenseite (`belege/` mit demselben Kettenprinzip)
-- Export für die Steuerberatung (CSV nach BMD-Konvention)
-- ebInterface/Peppol-Ausgabe (EN 16931) — Pflicht heute nur gegenüber dem
-  Bund, ab 2030 innergemeinschaftlich (ViDA); siehe ANFORDERUNGEN.md
+## Rechtliches, ehrlich
+
+[`ANFORDERUNGEN.md`](ANFORDERUNGEN.md) ist das lebende Register: was
+belegwerk erfüllt (§ 11 UStG, BAO-Ordnungsmäßigkeit, Sonderfälle mit
+Hinweispflicht), was bewusst draußen ist (Registrierkasse/RKSV — nur
+Barumsätze; keine Doppik; keine Steuerberatung) und was offen ist
+(strukturierte E-Rechnung ebInterface/EN 16931 — Pflicht heute nur
+gegenüber dem Bund, ab 2030 innergemeinschaftlich; UVA-Zuarbeit;
+BMD-Export). Mit Quellen und Datum, damit es altern darf, ohne zu lügen.
+
+## Testen
+
+```bash
+bun test        # Unit-Tests (Parser, Nummernkreis, Registerkette)
+                # + End-to-End: jede CLI-Funktion in einem Wegwerf-Mandanten
+```
+
+Die Suite deckt auch die Fehlerwege ab: fehlende Pflichtangaben,
+manipulierte Register, doppelte Storni, Mahnung vor Fälligkeit.
+
+## Name und Herkunft
+
+belegwerk = Beleg + Werk, in der Namensfamilie der Stoicera Group
+(kapitelwerk, fleetdeck, granit). Entstanden aus dem Rechnungs-Skript
+des Stoicera-Branding-Kits; erster Mandant ist die Stoicera Group
+selbst — das Werkzeug wird zuerst am eigenen Unternehmen bewiesen.
+Vor einem öffentlichen Rollout steht die formale Markenprüfung
+(EUIPO/Patentamt) aus — der Desk-Review fand keine Kollision.
 
 ## Lizenz
 
-MIT — siehe LICENSE. Open Source, weil das Register nur so viel wert
-ist, wie man dem Werkzeug glauben kann, das es führt: Wer prüfen will,
-liest den Code.
+MIT — siehe [LICENSE](LICENSE).

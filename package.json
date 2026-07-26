@@ -1,10 +1,10 @@
 {
-  "name": "kontor",
-  "version": "0.3.0",
+  "name": "belegwerk",
+  "version": "0.4.0",
   "description": "Das einfachste Rechnungs- und Registerwerkzeug für kleine Unternehmen. Eine JSON je Rechnung, ein PDF, ein manipulationsevidentes Register. Kein Server, keine Datenbank, kein Abo.",
   "private": true,
   "type": "module",
-  "bin": { "kontor": "./src/kontor.mjs" },
-  "scripts": { "beispiel": "cd beispiel && bun ../src/kontor.mjs rechnung rechnungen/RE-2026-000.json" },
+  "bin": { "belegwerk": "./src/belegwerk.mjs" },
+  "scripts": { "test": "bun test", "beispiel": "cd beispiel && bun ../src/belegwerk.mjs rechnung rechnungen/RE-2026-000.json" },
   "dependencies": { "puppeteer": "^25.3.0" }
 }

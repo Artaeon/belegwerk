@@ -1,0 +1,11 @@
+[Unit]
+Description=belegwerk: wiederkehrende Rechnungen des Monats ausstellen
+# Pfade anpassen: /srv/belegwerk/belegwerk = Werkzeug, /srv/belegwerk/stoicera = Mandant
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/belegwerk/stoicera
+ExecStart=/bin/sh -c 'bun /srv/belegwerk/belegwerk/src/belegwerk.mjs wiederkehrend && \
+  git add -A && \
+  (git diff --cached --quiet || git commit -m "Monatsrechnungen $(date +%%Y-%%m)") && \
+  git push'

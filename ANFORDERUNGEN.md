@@ -1,4 +1,4 @@
-# Anforderungsregister — was kontor erfüllt und was nicht
+# Anforderungsregister — was belegwerk erfüllt und was nicht
 
 Geprüft am 29. Juli 2026 gegen den Stand der österreichischen Rechtslage
 (Quellen am Ende). **Dieses Register ist eine sorgfältige fachliche
@@ -21,14 +21,14 @@ Status: ✓ erfüllt und erzwungen · ● teilweise · ✗ offen · — keine Pf
 | Steuerbetrag | ✓ | je Satz berechnet und ausgewiesen |
 | UID des Ausstellers | ✓ | erzwungen (außer Kleinunternehmer) |
 | UID des Empfängers ab 10.000 € brutto | ✓ | erzwungen |
-| Kleinunternehmer-Hinweis (§ 6 Abs 1 Z 27) | ✓ | gesetzt, USt entfällt; Umsatzgrenze (55.000 € seit 2025 — **beim Steuerberater bestätigen**) überwacht kontor **nicht** |
-| Kleinbetragsrechnung ≤ 400 € | — | Erleichterung, keine Pflicht; kontor stellt immer vollständig aus |
+| Kleinunternehmer-Hinweis (§ 6 Abs 1 Z 27) | ✓ | gesetzt, USt entfällt; Umsatzgrenze (55.000 € seit 2025 — **beim Steuerberater bestätigen**) überwacht belegwerk **nicht** |
+| Kleinbetragsrechnung ≤ 400 € | — | Erleichterung, keine Pflicht; belegwerk stellt immer vollständig aus |
 
 **● Sonderfälle mit Hinweispflicht:** Reverse Charge (§ 19) und die
 steuerfreie innergemeinschaftliche Lieferung sind abgedeckt —
 `steuerregel` auf der Rechnung, Pflicht-UIDs erzwungen, der
 vorgeschriebene Hinweis steht auf der Rechnung. Alles Weitere
-(Differenzbesteuerung, Dreiecksgeschäft, …) **lehnt kontor ausdrücklich
+(Differenzbesteuerung, Dreiecksgeschäft, …) **lehnt belegwerk ausdrücklich
 ab**, statt eine Rechnung ohne den nötigen Hinweis auszustellen.
 **Storno** ist abgedeckt: eigene Nummer, negierte Beträge, Original
 bleibt unangetastet, doppelter Storno wird verweigert.
@@ -44,7 +44,7 @@ Prüfsumme auf der Rechnung geht darüber hinaus.
 
 ## 3. E-Rechnung (strukturiert)
 
-| Fall | Pflicht? | kontor |
+| Fall | Pflicht? | belegwerk |
 |---|---|---|
 | **Bund** (Bundesdienststellen) | Ja, seit 2014: ebInterface oder Peppol BIS über USP / e-rechnung.gv.at | ✗ kein strukturiertes Format. Übergangsweg: die **manuelle Web-Erfassung auf e-rechnung.gv.at** — für gelegentliche Bundesaufträge zulässig und ausreichend |
 | **Länder und Gemeinden** | Nein — freiwillig, viele akzeptieren Peppol | — PDF genügt; unsere Gemeinden betrifft keine Pflicht |
@@ -58,40 +58,40 @@ Prüfsumme auf der Rechnung geht darüber hinaus.
 |---|---|---|
 | 7 Jahre Aufbewahrung (§ 132) | ● | JSONs, PDFs und Register sind Dateien im Git — die Dauer erledigt Versionierung, aber **nur mit externem Backup** (Remote-Repo). Ein lokaler Ordner allein ist keine Aufbewahrung |
 | Ordnungsmäßigkeit (§ 131): chronologisch, vollständig, Änderungen nachvollziehbar | ✓ | „Nie ändern, nur stornieren" + Hash-Kette + Git-Historie entsprechen genau dem Prinzip |
-| Einnahmen-Ausgaben-Rechnung (§ 4 Abs 3 EStG) | ✗ | kontor führt nur die **Ausgangsseite**. Ausgaben/Belege, Anlagenverzeichnis, E/A-Zusammenstellung fehlen — das bleibt vorerst bei Steuerberatung bzw. bisherigem Weg |
+| Einnahmen-Ausgaben-Rechnung (§ 4 Abs 3 EStG) | ✗ | belegwerk führt nur die **Ausgangsseite**. Ausgaben/Belege, Anlagenverzeichnis, E/A-Zusammenstellung fehlen — das bleibt vorerst bei Steuerberatung bzw. bisherigem Weg |
 
 ## 5. Registrierkasse (§ 131b BAO, RKSV)
 
-— **Keine Pflicht für kontor-Rechnungen**, solange ausschließlich auf
+— **Keine Pflicht für belegwerk-Rechnungen**, solange ausschließlich auf
 Überweisung fakturiert wird. Aber die Grenze ist schmal und wird oft
 falsch verstanden: Als **Barumsatz zählt auch Bankomat-, Kreditkarten-,
 Gutschein- und Handy-Zahlung vor Ort**. Schwellen: über 15.000 €
-Jahresumsatz UND davon über 7.500 € bar. Sollte kontor je „Zahlung vor
+Jahresumsatz UND davon über 7.500 € bar. Sollte belegwerk je „Zahlung vor
 Ort" abbilden, ist das ein RKSV-Projekt (signierte Belege,
 Manipulationsschutz per Zertifikat) — bewusst außerhalb des Produkts.
 
-## 6. Was InvoiceNinja kann und kontor (noch) nicht
+## 6. Was InvoiceNinja kann und belegwerk (noch) nicht
 
 Keine Rechtspflichten, aber der ehrliche Produktvergleich:
 
-- ~~Storno/Gutschrift~~ → `kontor storno`, seit v0.2
-- ~~Wiederkehrende Rechnungen~~ → `kontor wiederkehrend` + Server-Timer, seit v0.2
+- ~~Storno/Gutschrift~~ → `belegwerk storno`, seit v0.2
+- ~~Wiederkehrende Rechnungen~~ → `belegwerk wiederkehrend` + Server-Timer, seit v0.2
 - ~~Zahlungsstatus und Mahnwesen~~ → `bezahlt` / `offen` / `mahnung`, seit v0.3
   (Mahnstufen mit § 456/458 UGB; Versand bewusst von Hand)
 - UVA-Zuarbeit (Kennzahlen je Quartal) und Export für die Steuerberatung (BMD)
 - Kundenportal, Online-Zahlung
 
 **Empfehlung deshalb: Parallelbetrieb.** InvoiceNinja bleibt führend,
-kontor stellt zunächst einzelne echte Rechnungen parallel aus (gleiche
+belegwerk stellt zunächst einzelne echte Rechnungen parallel aus (gleiche
 Nummernlogik, eigenes Register). Umgestellt wird zu einem Stichtag —
 Jahreswechsel bietet sich an — und erst, wenn die Steuerberatung die
-kontor-Ausgabe geprüft und freigegeben hat.
+belegwerk-Ausgabe geprüft und freigegeben hat.
 
 ## Fazit
 
 Für den heutigen Stoicera-Anwendungsfall — Inlandsrechnungen per
 Überweisung an Unternehmen und Gemeinden, Regelbesteuerung — erfüllt
-kontor die **rechtlichen** Anforderungen an die Rechnungsausstellung;
+belegwerk die **rechtlichen** Anforderungen an die Rechnungsausstellung;
 E-Rechnungspflicht besteht nur gegenüber dem Bund und ist per
 Portal-Handeingabe abdeckbar. Was fehlt, ist kein Rechtsproblem, sondern
 Produktumfang (Storno, Wiederkehrend, Ausgabenseite, Exporte) — und die

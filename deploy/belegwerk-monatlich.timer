@@ -1,5 +1,5 @@
 [Unit]
-Description=kontor: am Monatsersten die wiederkehrenden Rechnungen ausstellen
+Description=belegwerk: am Monatsersten die wiederkehrenden Rechnungen ausstellen
 
 [Timer]
 OnCalendar=*-*-01 06:00

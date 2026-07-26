@@ -14,7 +14,7 @@
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
-const SEED = 'kontor-register-v1';
+const SEED = 'belegwerk-register-v1';
 export const sha = (s) => createHash('sha256').update(s).digest('hex');
 
 const zeilen = (pfad) => readFileSync(pfad, 'utf8').trim().split('\n').slice(1);
