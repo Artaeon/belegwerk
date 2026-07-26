@@ -450,6 +450,6 @@ describe('CLI End-to-End', () => {
   test('hilfe: unbekannter Befehl zeigt die Übersicht', () => {
     const r = lauf('unfug');
     expect(r.code).toBe(0);
-    expect(r.out).toContain('belegwerk — Rechnung und Register');
+    expect(r.out).toContain('Dateien. Belege. Nachweis.');
   });
 });

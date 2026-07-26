@@ -1,7 +1,9 @@
 # belegwerk
 
-**Das einfachste Rechnungswerkzeug für österreichische kleine
-Unternehmen.** Ein Ordner ist dein Unternehmen, eine JSON-Datei ist eine
+![belegwerk — Dateien. Belege. Nachweis.](brand/github/github-readme-banner-1600x600.svg)
+
+**Dateien. Belege. Nachweis.** — das einfachste Rechnungswerkzeug für
+österreichische kleine Unternehmen. Ein Ordner ist dein Unternehmen, eine JSON-Datei ist eine
 Rechnung, ein Befehl setzt das PDF und führt ein manipulationsevidentes
 Register. Kein Server-Zwang, keine Datenbank, kein Konto, kein Abo —
 Dateien, die man versteht, und Git als Prüfpfad.
@@ -111,7 +113,12 @@ belegwerk. Drei Stufen, alle optional:
 
 Ein Branding-Kit (wie das der Stoicera Group) legt genau diese Dateien
 in `vorlage/` ab — und jede Rechnung, jeder Storno, jede Mahnung trägt
-das Kit.
+das Kit. Wer kein eigenes Branding hat, nimmt die mitgelieferte
+[Standardvorlage](vorlagen/standard/) in der belegwerk-Designsprache —
+IBM Plex, Werkorange, Registergrün, ohne belegwerk-Logo.
+
+Die Marke des Werkzeugs selbst (Logos, Tokens, Guide, GitHub-Assets)
+liegt unter [`brand/`](brand/).
 
 ## Die Regeln, die das Werkzeug durchsetzt
 

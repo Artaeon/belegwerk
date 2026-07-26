@@ -342,7 +342,8 @@ try {
     console.log('\nDie Übersicht ist eine Arbeitshilfe, keine Buchhaltung — was zählt, sind Register und Belege.');
 
   } else {
-    console.log(`belegwerk — Rechnung und Register für kleine Unternehmen
+    console.log(`belegwerk — Dateien. Belege. Nachweis.
+Rechnung und Register für kleine Unternehmen.
 
   belegwerk init                     Mandanten-Ordner anlegen (firma.json)
   belegwerk rechnung <datei.json>    Rechnung setzen + ins Register eintragen
