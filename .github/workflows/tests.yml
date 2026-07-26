@@ -1,0 +1,18 @@
+# Die Suite läuft bei jedem Push und Pull Request — dieselben 64 Tests
+# wie lokal, inklusive PDF-Erzeugung (Chromium bringt Puppeteer mit;
+# --no-sandbox setzt der Code nur, wenn CI gesetzt ist).
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test
