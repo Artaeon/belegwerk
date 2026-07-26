@@ -42,6 +42,9 @@ function mandant(von = '.') {
     console.error('✗ Keine firma.json gefunden — bin ich im Mandanten-Ordner? Zuerst: belegwerk init');
     process.exit(1);
   }
+  /* wurzel wandert in die firma: Logo-, Schrift- und Vorlagenpfade lösen
+     relativ zum Mandanten auf, egal von wo der Befehl läuft. */
+  fund.firma.wurzel = fund.wurzel;
   return { ...fund, register: join(fund.wurzel, 'register.csv') };
 }
 
@@ -219,6 +222,24 @@ try {
     }
     console.log(`✓ ${erzeugt} von ${vorlagen.length} Vorlagen für ${monatsname} ausgestellt.`);
 
+  } else if (befehl === 'sichern') {
+    /* Für Mandanten ohne Git: ein datiertes, vollständiges Archiv an
+       einen Ort AUSSERHALB des Mandanten — ein Backup im selben Ordner
+       ist keines. Wer Git nutzt, sichert per push; dieses Archiv ist
+       der Weg für den USB-Stick und die externe Platte. */
+    const m = mandant();
+    const ziel = arg ?? join(m.wurzel, '..', 'belegwerk-sicherungen');
+    mkdirSync(ziel, { recursive: true });
+    const name = `belegwerk-${m.firma.name.replace(/[^\wäöüÄÖÜß-]+/g, '-').toLowerCase()}-${iso(new Date())}.tar.gz`;
+    const archiv = join(ziel, name);
+    const p = Bun.spawnSync(['tar', '-czf', archiv, '--exclude', 'node_modules', '--exclude', '.git', '-C', dirname(m.wurzel), m.wurzel.split('/').at(-1)]);
+    if (p.exitCode !== 0) throw new Error(`tar fehlgeschlagen: ${p.stderr.toString().trim()}`);
+    const probe = Bun.spawnSync(['tar', '-tzf', archiv]);
+    const dateien = probe.stdout.toString().trim().split('\n');
+    if (!dateien.some((d) => d.endsWith('firma.json'))) throw new Error('Archiv unvollständig — firma.json fehlt. Sicherung gelöscht wäre besser als eine falsche.');
+    console.log(`✓ ${archiv} — ${dateien.length} Dateien, geprüft (firma.json enthalten).`);
+    console.log('  Eine Sicherung auf derselben Platte ist keine: Archiv auf ein zweites Medium oder ins Remote.');
+
   } else if (befehl === 'bezahlt' && arg) {
     const m = mandant();
     const fund = alleRechnungen(m.wurzel)
@@ -333,10 +354,13 @@ try {
   belegwerk konto <betrag> [datum]   Kontostand manuell festhalten
   belegwerk ausgabe <betrag> <text> [kategorie]   Ausgabe notieren
   belegwerk stand                    Überblick: Konto, offen, Jahr, Ziele
+  belegwerk sichern [zielordner]     Datiertes Archiv des Mandanten (tar.gz)
   belegwerk pruefen                  Registerkette + Nummernkreis verifizieren
 
 Ein Ordner ist ein Unternehmen. Dateien statt Datenbank, Git als Prüfpfad.
-Ziele: ziele.json im Mandanten-Ordner — [{ "text": "Rücklage", "betrag": 10000 }]`);
+Ziele: ziele.json — [{ "text": "Rücklage", "betrag": 10000 }]
+Branding: vorlage/stil.css, vorlage/kopf.html, vorlage/fuss.html — dazu
+logoPfad, schriftPfad und stil in firma.json. Siehe README.`);
   }
 } catch (e) {
   console.error(`✗ ${e.message}`);

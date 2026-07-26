@@ -61,6 +61,7 @@ Muster-Rechnung mit gemischten Steuersätzen aus `beispiel/`.
 | `konto <betrag> [datum]` | Kontostand manuell festhalten |
 | `ausgabe <betrag> <text> [kategorie]` | Ausgabe notieren |
 | `stand` | Überblick: Konto, offene Forderungen, Jahressummen, Ziele |
+| `sichern [ziel]` | Datiertes, selbstprüfendes tar.gz des ganzen Mandanten |
 | `pruefen` | Registerkette und Nummernkreis verifizieren |
 
 ## Eine Rechnung
@@ -88,6 +89,30 @@ Muster-Rechnung mit gemischten Steuersätzen aus `beispiel/`.
 - Ab 10.000 € brutto verlangt § 11 UStG die UID des Empfängers —
   belegwerk auch, selbst beim Storno über −10.000 €.
 
+## Branding: dein Kit, deine Dokumente
+
+Die Dokumente tragen das Branding des Mandanten, nicht das von
+belegwerk. Drei Stufen, alle optional:
+
+1. **Farben und Logo** — `firma.json`:
+   ```json
+   "stil": { "primaer": "#0B1F3A", "akzent": "#2558E8" },
+   "logoPfad": "vorlage/logo.svg",
+   "schriftPfad": "vorlage/schrift.woff2"
+   ```
+   Logo und Schrift werden eingebettet; die Pfade lösen relativ zum
+   Mandanten-Ordner auf.
+2. **Eigenes CSS** — `vorlage/stil.css` wird nach dem eingebauten Satz
+   geladen und gewinnt die Kaskade.
+3. **Eigener Kopf und Fuß** — `vorlage/kopf.html` und `vorlage/fuss.html`
+   ersetzen die eingebauten Bausteine vollständig. Platzhalter:
+   `{{logo}}`, `{{meta}}`, `{{name}}`, `{{adresse}}`, `{{uid}}`,
+   `{{iban}}`, `{{email}}`, `{{web}}`.
+
+Ein Branding-Kit (wie das der Stoicera Group) legt genau diese Dateien
+in `vorlage/` ab — und jede Rechnung, jeder Storno, jede Mahnung trägt
+das Kit.
+
 ## Die Regeln, die das Werkzeug durchsetzt
 
 1. **Eine ausgestellte Rechnung wird nie geändert.** Dieselbe Nummer mit
@@ -106,8 +131,12 @@ Kein Webdienst — kein Port, keine Anmeldung, keine Angriffsfläche. Auf
 dem Server ist belegwerk ein privates Git-Repo je Mandant, ein
 systemd-Timer stellt am Monatsersten die wiederkehrenden Rechnungen aus
 und pusht; der Push ins Remote **ist** die 7-Jahre-Aufbewahrung (BAO).
-Ein Wochen-Cron mailt Registerprüfung und Forderungsbericht. Anleitung
-und Unit-Dateien: [`deploy/SERVER.md`](deploy/SERVER.md).
+Für alle ohne Git: `belegwerk sichern` erzeugt ein datiertes,
+selbstprüfendes Archiv fürs zweite Medium. Ein Wochen-Cron mailt
+Registerprüfung und Forderungsbericht. Anleitung und Unit-Dateien:
+[`deploy/SERVER.md`](deploy/SERVER.md) · Datenschutz (lokal, keine
+Telemetrie, Rollen nach DSGVO, Löschfristen):
+[`DATENSCHUTZ.md`](DATENSCHUTZ.md).
 
 ## Rechtliches, ehrlich
 

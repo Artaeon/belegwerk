@@ -79,6 +79,12 @@ export function lesen(datei, firma) {
 }
 
 export async function setzen(r, firma, pdfPfad) {
+  await pdf(htmlRechnung(r, firma), pdfPfad);
+}
+
+/** Das gesetzte Dokument als HTML — getrennt vom PDF-Schritt, damit
+ *  Vorlagen-Überschreibungen testbar sind, ohne einen Browser zu starten. */
+export function htmlRechnung(r, firma) {
   const iban = r.zahlung?.iban ?? firma.iban;
   const bic = r.zahlung?.bic ?? firma.bic;
 
@@ -102,7 +108,7 @@ export async function setzen(r, firma, pdfPfad) {
         ? 'Steuerfreie innergemeinschaftliche Lieferung (Art. 6 Abs 1 UStG).'
         : '';
 
-  const html = seite(firma, `Rechnung ${r.nummer}`, `Rechnung ${esc(r.nummer)} · ${esc(r.datum)}${r.muster ? ' · MUSTER' : ''}`, `
+  return seite(firma, `Rechnung ${r.nummer}`, `Rechnung ${esc(r.nummer)} · ${esc(r.datum)}${r.muster ? ' · MUSTER' : ''}`, `
 <h1>Rechnung ${esc(r.nummer)}${r.muster ? ' — Muster, ohne Rechtswirkung' : ''}</h1>
 
 <table>
@@ -133,8 +139,6 @@ ${r.hinweis ? `<p>${esc(r.hinweis)}</p>` : ''}
 <span class="mono">${r.datenhash}</span><br>
 Sie ist im Rechnungsregister des Ausstellers hinterlegt — Rechnung und Register belegen einander.</div>
 `);
-
-  await pdf(html, pdfPfad);
 }
 
 /** HTML → A4-PDF. Auch Mahnungen und künftige Dokumente laufen hier durch. */

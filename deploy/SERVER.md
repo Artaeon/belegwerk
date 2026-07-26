@@ -39,6 +39,22 @@ doppelte Rechnung. Alternativ als Cron:
 0 6 1 * *  cd /srv/belegwerk/stoicera && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs wiederkehrend && git add -A && git commit -m "Monatsrechnungen $(date +\%Y-\%m)" && git push
 ```
 
+## Sicherung — zwei Wege, mindestens einer Pflicht
+
+1. **Git-Remote (empfohlen):** Der Push im Timer ist die laufende
+   Sicherung — privates Remote, SSH, fertig. 7 Jahre Aufbewahrung (BAO)
+   erledigt die Historie nebenbei.
+2. **`belegwerk sichern [ziel]`:** datiertes tar.gz des ganzen Mandanten,
+   selbstprüfend (bricht, wenn firma.json fehlt). Für alle ohne Git und
+   für das zweite Medium — eine Sicherung auf derselben Platte ist keine.
+
+```
+30 6 * * 0  cd /srv/belegwerk/stoicera && bun /srv/belegwerk/belegwerk/src/belegwerk.mjs sichern /mnt/backup/belegwerk
+```
+
+Datenschutz dazu (verschlüsselte Ablage, Rollen nach DSGVO,
+Löschfristen): [`../DATENSCHUTZ.md`](../DATENSCHUTZ.md).
+
 ## Was der Server NICHT übernimmt
 
 - **Versand.** Rechnungen verschickt ein Mensch (oder ein bewusst

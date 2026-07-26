@@ -7,25 +7,63 @@
  * das Dokument bewusst unbunt. Ein Rechnungswerkzeug hat keine eigene
  * Marke auf fremden Rechnungen.
  */
-import { readFileSync } from 'node:fs';
-import { extname } from 'node:path';
+import { readFileSync, existsSync } from 'node:fs';
+import { extname, join, isAbsolute } from 'node:path';
 
 export const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const MIME = { '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' };
 
+/* Pfade in firma.json sind relativ zum Mandanten-Ordner — nicht zum
+   Arbeitsverzeichnis. Sonst findet derselbe Befehl das Logo aus
+   rechnungen/2026/ heraus nicht mehr. */
+const aufloesen = (firma, pfad) =>
+  isAbsolute(pfad) || !firma.wurzel ? pfad : join(firma.wurzel, pfad);
+
+/** Vorlagen-Überschreibung: Der Mandant kann unter vorlage/ eigene
+ *  Bausteine ablegen — ein Branding-Kit legt sie dort ab, belegwerk
+ *  setzt sie ein. Platzhalter: {{name}}, {{adresse}}, {{uid}}, {{iban}},
+ *  {{email}}, {{web}}, {{logo}}, {{meta}}. */
+const vorlage = (firma, name) => {
+  if (!firma.wurzel) return null;
+  const p = join(firma.wurzel, 'vorlage', name);
+  return existsSync(p) ? readFileSync(p, 'utf8') : null;
+};
+
+const ersetzen = (tpl, werte) =>
+  tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => werte[k] ?? '');
+
 export function seite(firma, titel, meta, inhalt) {
   const primaer = firma.stil?.primaer ?? '#111827';
   const akzent = firma.stil?.akzent ?? primaer;
   const logo = firma.logoPfad
-    ? `<img src="data:${MIME[extname(firma.logoPfad).toLowerCase()]};base64,${readFileSync(firma.logoPfad).toString('base64')}" alt="${esc(firma.name)}">`
+    ? `<img src="data:${MIME[extname(firma.logoPfad).toLowerCase()]};base64,${readFileSync(aufloesen(firma, firma.logoPfad)).toString('base64')}" alt="${esc(firma.name)}">`
     : `<span class="firmenname">${esc(firma.name)}</span>`;
+
+  /* Eigene Schrift: eine woff2 je Mandant, eingebettet — das Dokument
+     bleibt eigenständig und sieht überall gleich aus. */
+  const schrift = firma.schriftPfad
+    ? `@font-face{font-family:EigeneSchrift;src:url(data:font/woff2;base64,${readFileSync(aufloesen(firma, firma.schriftPfad)).toString('base64')}) format('woff2');font-weight:100 900}`
+    : '';
+  const familie = firma.schriftPfad
+    ? 'EigeneSchrift,-apple-system,"Segoe UI",Roboto,Arial,sans-serif'
+    : '-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
+
+  const werte = {
+    name: esc(firma.name), adresse: esc(firma.adresse), uid: esc(firma.uid ?? ''),
+    iban: esc(firma.iban ?? ''), email: esc(firma.email ?? ''), web: esc(firma.web ?? ''),
+    logo, meta,
+  };
+  const eigenerKopf = vorlage(firma, 'kopf.html');
+  const eigenerFuss = vorlage(firma, 'fuss.html');
+  const eigenesCss = vorlage(firma, 'stil.css') ?? '';
 
   return `<!doctype html><html lang="de-AT"><head><meta charset="utf-8">
 <title>${esc(titel)}</title>
 <style>
+${schrift}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+body{font-family:${familie};
   color:#111827;font-size:9.2pt;line-height:1.5;font-variant-numeric:tabular-nums}
 @media screen{html{background:#f2f3f5}body{max-width:210mm;margin:2rem auto;padding:16mm 15mm;
   background:#fff;box-shadow:0 1px 14px rgba(0,0,0,.12)}}
@@ -54,13 +92,15 @@ tr:first-child th,tr:first-child td{border-top:none}
 .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em;word-break:break-all}
 footer{margin-top:1.6rem;padding-top:.5rem;border-top:1px solid ${primaer};color:#5b6472;font-size:7.4pt;
   display:flex;flex-wrap:wrap;justify-content:space-between;gap:.3rem 1.6rem}
+/* ── vorlage/stil.css des Mandanten — gewinnt durch Reihenfolge ── */
+${eigenesCss}
 </style></head><body>
-<div class="kopf">${logo}<span class="meta">${meta}</span></div>
+${eigenerKopf ? ersetzen(eigenerKopf, werte) : `<div class="kopf">${logo}<span class="meta">${meta}</span></div>`}
 ${inhalt}
-<footer>
+${eigenerFuss ? ersetzen(eigenerFuss, werte) : `<footer>
   <span>${esc(firma.name)} · ${esc(firma.adresse)}</span>
   <span>${firma.uid ? `UID ${esc(firma.uid)}` : ''}</span>
   <span>${esc(firma.email ?? '')}${firma.web ? ` · ${esc(firma.web)}` : ''}</span>
-</footer>
+</footer>`}
 </body></html>`;
 }

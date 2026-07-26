@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { parseBetrag, parseDatum, zielTage } from '../src/lib/geld.mjs';
 import { naechste, luecken } from '../src/lib/nummern.mjs';
 import { eintragen, pruefen, vertraeglich } from '../src/lib/register.mjs';
-import { lesen } from '../src/lib/rechnung.mjs';
+import { lesen, htmlRechnung } from '../src/lib/rechnung.mjs';
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'belegwerk.mjs');
 
@@ -191,6 +191,71 @@ describe('rechnung: lesen validiert', () => {
   });
 });
 
+/* ══ stil.mjs — Branding und Vorlagen-Überschreibung ═════════════════ */
+
+describe('stil: Branding je Mandant', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'belegwerk-stil-'));
+  const firma = {
+    name: 'Marken OG', adresse: 'Weg 1, 4020 Linz', uid: 'ATU22222222', iban: 'AT11',
+    wurzel: dir, stil: { primaer: '#0B1F3A', akzent: '#2558E8' },
+  };
+  const basis = {
+    nummer: 'RE-1', datum: '2026-07-01',
+    empfaenger: { name: 'Kunde', adresse: 'Gasse 2, Wien' },
+    leistungszeitraum: 'Juli 2026',
+    positionen: [{ text: 'Arbeit', preis: 100 }],
+  };
+  const rechnungLaden = () => {
+    const p = join(dir, 'r.json');
+    writeFileSync(p, JSON.stringify(basis));
+    return lesen(p, firma);
+  };
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  test('ohne Vorlagen: Firmenname als Marke, Farben aus firma.json', () => {
+    const html = htmlRechnung(rechnungLaden(), firma);
+    expect(html).toContain('class="firmenname"');
+    expect(html).toContain('#0B1F3A');
+    expect(html).toContain('#2558E8');
+  });
+
+  test('vorlage/stil.css wird angehängt und gewinnt die Kaskade', () => {
+    mkdirSync(join(dir, 'vorlage'), { recursive: true });
+    writeFileSync(join(dir, 'vorlage/stil.css'), 'h1{letter-spacing:.2em} /* eigenes-kit */');
+    const html = htmlRechnung(rechnungLaden(), firma);
+    expect(html).toContain('eigenes-kit');
+    expect(html.indexOf('eigenes-kit')).toBeGreaterThan(html.indexOf('.kopf{'));
+  });
+
+  test('vorlage/kopf.html ersetzt den Kopf, Platzhalter werden gefüllt', () => {
+    writeFileSync(join(dir, 'vorlage/kopf.html'), '<header id="kit-kopf">{{name}} · {{meta}}</header>');
+    const html = htmlRechnung(rechnungLaden(), firma);
+    expect(html).toContain('id="kit-kopf"');
+    expect(html).toContain('Marken OG ·');
+    expect(html).not.toContain('class="kopf"');
+  });
+
+  test('vorlage/fuss.html ersetzt den Fuß samt UID und IBAN', () => {
+    writeFileSync(join(dir, 'vorlage/fuss.html'), '<footer id="kit-fuss">{{uid}} — {{iban}}</footer>');
+    const html = htmlRechnung(rechnungLaden(), firma);
+    expect(html).toContain('id="kit-fuss"');
+    expect(html).toContain('ATU22222222 — AT11');
+  });
+
+  test('Logo und Schrift lösen relativ zum Mandanten auf und werden eingebettet', () => {
+    writeFileSync(join(dir, 'vorlage/logo.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
+    writeFileSync(join(dir, 'vorlage/schrift.woff2'), 'FONTBYTES');
+    /* Der eigene Kopf muss {{logo}} auch verwenden — ein Kit, das den
+       Platzhalter weglässt, bekommt bewusst kein Logo untergeschoben. */
+    writeFileSync(join(dir, 'vorlage/kopf.html'), '<header id="kit-kopf">{{logo}} {{meta}}</header>');
+    const mitMarke = { ...firma, logoPfad: 'vorlage/logo.svg', schriftPfad: 'vorlage/schrift.woff2' };
+    const html = htmlRechnung(rechnungLaden(), mitMarke);
+    expect(html).toContain('data:image/svg+xml;base64');
+    expect(html).toContain('EigeneSchrift');
+    expect(html).toContain(Buffer.from('FONTBYTES').toString('base64'));
+  });
+});
+
 /* ══ End-to-End — die CLI im Wegwerf-Mandanten ═══════════════════════ */
 
 describe('CLI End-to-End', () => {
@@ -355,6 +420,31 @@ describe('CLI End-to-End', () => {
     expect(r.code).toBe(1);
     expect(r.out).toContain('Kette gebrochen');
     writeFileSync(join(M, 'register.csv'), orig);
+  });
+
+  test('sichern: datiertes Archiv, geprüft, ohne node_modules', () => {
+    mkdirSync(join(M, 'node_modules', 'dummy'), { recursive: true });
+    writeFileSync(join(M, 'node_modules/dummy/x.js'), 'x');
+    const ziel = join(M, '..', 'belegwerk-test-sicherung');
+    const r = lauf('sichern', ziel);
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('geprüft');
+    const archiv = r.out.match(/\S+\.tar\.gz/)[0];
+    expect(existsSync(archiv)).toBe(true);
+    const inhalt = Bun.spawnSync(['tar', '-tzf', archiv]).stdout.toString();
+    expect(inhalt).toContain('firma.json');
+    expect(inhalt).toContain('register.csv');
+    expect(inhalt).not.toContain('node_modules');
+    rmSync(ziel, { recursive: true, force: true });
+  });
+
+  test('rechnung mit Mandanten-Branding: vorlage/ wirkt bis ins PDF', () => {
+    mkdirSync(join(M, 'vorlage'), { recursive: true });
+    writeFileSync(join(M, 'vorlage/stil.css'), 'h1{color:#0B1F3A}');
+    writeFileSync(join(M, 'vorlage/kopf.html'), '<header>{{name}} — {{meta}}</header>');
+    const r = lauf('rechnung', rechnungJson('RE-2026-910.json', { nummer: 'RE-2026-910' }));
+    expect(r.code).toBe(0);
+    expect(existsSync(join(M, 'rechnungen/RE-2026-910.pdf'))).toBe(true);
   });
 
   test('hilfe: unbekannter Befehl zeigt die Übersicht', () => {
