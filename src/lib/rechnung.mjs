@@ -28,6 +28,13 @@ export function lesen(datei, firma) {
   if (!r.empfaenger?.name || !r.empfaenger?.adresse) fehlt.push('empfaenger.name und empfaenger.adresse');
   if (!r.leistungszeitraum) fehlt.push('leistungszeitraum — Tag oder Zeitraum der Leistung');
   if (!r.positionen?.length) fehlt.push('positionen');
+  for (const [i, p] of (r.positionen ?? []).entries()) {
+    /* Ein Preis, der keine Zahl ist, ergäbe eine Rechnung über „NaN €" —
+       und eur.format würde sie klaglos setzen. */
+    if (!p.text) fehlt.push(`positionen[${i}].text`);
+    if (typeof p.preis !== 'number' || !Number.isFinite(p.preis)) fehlt.push(`positionen[${i}].preis — muss eine Zahl sein (Punkt als Dezimaltrenner)`);
+    if (p.menge !== undefined && (!Number.isFinite(p.menge) || p.menge <= 0)) fehlt.push(`positionen[${i}].menge — muss eine Zahl über 0 sein`);
+  }
   if (!firma.kleinunternehmer && !firma.uid) fehlt.push('uid in firma.json — § 11 UStG verlangt die UID des Ausstellers');
   if (!firma.iban && !r.zahlung?.iban) fehlt.push('iban — in firma.json oder zahlung.iban');
 

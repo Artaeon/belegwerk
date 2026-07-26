@@ -10,7 +10,11 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join, isAbsolute } from 'node:path';
 
-export const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+/* Auch Anführungszeichen: Werte landen in Attributen (alt="…") — ein
+   Empfängername mit `" onload="` wäre sonst Markup statt Text. */
+export const esc = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 const MIME = { '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' };
 

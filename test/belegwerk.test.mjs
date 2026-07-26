@@ -523,6 +523,44 @@ describe('CLI End-to-End', () => {
   });
 });
 
+/* ══ Sicherheit — die Angriffsflächen, einzeln zugenagelt ════════════ */
+
+describe('Sicherheit', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'belegwerk-sec-'));
+  const firma = { name: 'Sicher OG', adresse: 'Weg 1, Linz', uid: 'ATU1', iban: 'AT1', wurzel: dir };
+  const schreib = (inhalt) => {
+    const p = join(dir, 's.json');
+    writeFileSync(p, JSON.stringify(inhalt));
+    return p;
+  };
+  const basis = {
+    nummer: 'RE-1', datum: '2026-07-01',
+    empfaenger: { name: 'K', adresse: 'W' }, leistungszeitraum: 'Juli 2026',
+    positionen: [{ text: 'A', preis: 10 }],
+  };
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  test('HTML-Injection: Anführungszeichen und Markup werden entschärft', () => {
+    const boese = { ...basis, empfaenger: { name: '"><script>alert(1)</script>', adresse: `' onload='x` } };
+    const html = htmlRechnung(lesen(schreib(boese), firma), firma);
+    expect(html).not.toContain('<script>alert');
+    expect(html).not.toContain(`' onload='`);
+    expect(html).toContain('&quot;&gt;&lt;script&gt;');
+  });
+
+  test('Rechnung über NaN: kein Zahlen-Preis, keine Rechnung', () => {
+    expect(() => lesen(schreib({ ...basis, positionen: [{ text: 'A', preis: '10' }] }), firma)).toThrow('muss eine Zahl sein');
+    expect(() => lesen(schreib({ ...basis, positionen: [{ text: 'A', preis: 10, menge: 0 }] }), firma)).toThrow('über 0');
+    expect(() => lesen(schreib({ ...basis, positionen: [{ preis: 10 }] }), firma)).toThrow('text');
+  });
+
+  test('Register: Feldtrenner in Werten werden abgelehnt', () => {
+    const reg = join(dir, 'register.csv');
+    expect(() => eintragen(reg, { nummer: 'RE;9', datum: 'x', brutto: '1,00', datenhash: 'h' })).toThrow('unzulässig');
+    expect(() => eintragen(reg, { nummer: 'RE-9', datum: 'x\ny', brutto: '1,00', datenhash: 'h' })).toThrow('unzulässig');
+  });
+});
+
 /* ══ Import, Export, Nummernstart — der Umstieg vom alten System ═════ */
 
 describe('Import, Export und Nummernstart', () => {
@@ -573,6 +611,35 @@ describe('Import, Export und Nummernstart', () => {
     expect(r.out).toContain('stornieren');
   });
 
+  test('import: Pfad-Traversal in der Nummer wird abgelehnt', () => {
+    writeFileSync(join(M, 'boese.csv'),
+      'nummer;datum;empfaenger;brutto\n../../evil;2026-03-01;X;1,00\n');
+    const r = lauf('import', 'boese.csv');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('zulässig sind');
+    expect(existsSync(join(M, '..', 'evil.json'))).toBe(false);
+  });
+
+  test('export: Excel-Formel im Empfängernamen wird entschärft', () => {
+    writeFileSync(join(M, 'formel.csv'),
+      'nummer;datum;empfaenger;brutto\nRE-2026-097;2026-02-01;=SUMME(A1:A9);100,00\n');
+    expect(lauf('import', 'formel.csv').code).toBe(0);
+    lauf('export', '2026');
+    const csv = readFileSync(join(M, 'export', 'belegwerk-2026.csv'), 'utf8');
+    expect(csv).toContain(";'=SUMME(A1:A9);");
+  });
+
+  test('sichern: Ziel im Mandanten wird abgelehnt (wachsende Sicherung)', () => {
+    const r = lauf('sichern', 'rechnungen');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('IM Mandanten');
+  });
+
+  test('wiederkehrend ohne Argument: der Timer-Aufruf läuft (aktueller Monat)', () => {
+    const r = lauf('wiederkehrend');
+    expect(r.code).toBe(0);
+  }, 30_000);
+
   test('nummern.start: die erste neue Rechnung schließt an den Altbestand an', () => {
     const pfad = join(M, 'rechnungen', 'neu.json');
     writeFileSync(join(M, 'wiederkehrend/betrieb.json'), JSON.stringify({
@@ -592,7 +659,7 @@ describe('Import, Export und Nummernstart', () => {
     expect(csv).toContain('RE-2026-098;2026-03-01;Alt-Kunde A;;;1.200,00;altbestand');
     expect(csv).toContain('RE-2026-100');
     expect(csv).toContain(';offen');
-    expect(csv).toContain('SUMME;;;40,00;8,00;1.728,00;3 Rechnungen');
+    expect(csv).toContain('SUMME;;;40,00;8,00;1.828,00;4 Rechnungen');
   });
 
   test('export: leeres Jahr verweigert', () => {

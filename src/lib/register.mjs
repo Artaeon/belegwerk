@@ -54,6 +54,11 @@ function sperren(pfad) {
 
 /** Trägt eine Rechnung ein: 'neu' | 'unveraendert'. */
 export function eintragen(pfad, { nummer, datum, brutto, datenhash }) {
+  /* Feldtrenner und Zeilenumbrüche in den Werten würden die CSV-Spalten
+     verschieben und die Kette inkohärent machen — laut ablehnen. */
+  for (const [feld, wert] of Object.entries({ nummer, datum, brutto })) {
+    if (/[;\r\n]/.test(String(wert))) throw new Error(`${feld} enthält Strichpunkt oder Zeilenumbruch — im Register unzulässig: „${wert}"`);
+  }
   const freigeben = sperren(pfad);
   try {
     vertraeglich(pfad, nummer, datenhash);

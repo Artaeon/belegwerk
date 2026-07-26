@@ -255,9 +255,14 @@ try {
       }
       brutto += z.brutto;
       /* Altbestand trägt den Empfänger als Text, ausgestellte Rechnungen
-         als Objekt — der Export muss beide kennen. */
-      const empfName = typeof r?.empfaenger === 'string' ? r.empfaenger : r?.empfaenger?.name ?? '';
-      inhalt.push(`${z.nummer};${z.datum};${empfName.replaceAll(';', ',')};${n};${u};${eur.format(z.brutto)};${status}`);
+         als Objekt — der Export muss beide kennen. Und die CSV landet in
+         Excel bei der Steuerberatung: Ein Name, der mit =, +, - oder @
+         beginnt, würde dort als FORMEL laufen — der Apostroph davor
+         macht ihn wieder zu Text. */
+      let empfName = (typeof r?.empfaenger === 'string' ? r.empfaenger : r?.empfaenger?.name ?? '')
+        .replaceAll(';', ',').replace(/[\r\n]+/g, ' ');
+      if (/^[=+\-@]/.test(empfName)) empfName = `'${empfName}`;
+      inhalt.push(`${z.nummer};${z.datum};${empfName};${n};${u};${eur.format(z.brutto)};${status}`);
     }
     inhalt.push(`SUMME;;;${eur.format(netto)};${eur.format(ust)};${eur.format(brutto)};${zeilen.length} Rechnungen`);
     mkdirSync(join(m.wurzel, 'export'), { recursive: true });
@@ -281,6 +286,12 @@ try {
     for (const [i, z] of zeilen.slice(1).entries()) {
       const [nummer, datum, empfaenger, bruttoRoh] = z.split(';').map((s) => s?.trim());
       if (!nummer || !datum || !bruttoRoh) throw new Error(`Zeile ${i + 2} unvollständig: „${z}"`);
+      /* Die Nummer wird ein Dateiname — nur Zeichen, die keiner Deutung
+         bedürfen. „../" wäre sonst ein Schreibzugriff außerhalb des
+         Mandanten. */
+      if (!/^[A-Za-z0-9._-]+$/.test(nummer) || nummer.includes('..')) {
+        throw new Error(`Zeile ${i + 2}: Nummer „${nummer}" — zulässig sind Buchstaben, Ziffern, Punkt, Bindestrich, Unterstrich.`);
+      }
       const brutto = eur.format(parseBetrag(bruttoRoh));
       parseDatum(datum); /* laut scheitern statt still falsch übernehmen */
       /* Der Posten bekommt eine eigene kleine JSON: Ohne sie wüsste der
@@ -302,6 +313,9 @@ try {
        der Weg für den USB-Stick und die externe Platte. */
     const m = mandant();
     const ziel = arg ?? join(m.wurzel, '..', 'belegwerk-sicherungen');
+    if (resolve(ziel).startsWith(resolve(m.wurzel) + '/')) {
+      throw new Error('Das Sicherungsziel liegt IM Mandanten — jede Sicherung würde die vorigen mit einpacken und wachsen. Ziel außerhalb wählen.');
+    }
     mkdirSync(ziel, { recursive: true });
     const name = `belegwerk-${m.firma.name.replace(/[^\wäöüÄÖÜß-]+/g, '-').toLowerCase()}-${iso(new Date())}.tar.gz`;
     const archiv = join(ziel, name);

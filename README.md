@@ -180,6 +180,26 @@ Barumsätze; keine Doppik; keine Steuerberatung) und was offen ist
 gegenüber dem Bund, ab 2030 innergemeinschaftlich; UVA-Zuarbeit;
 BMD-Export). Mit Quellen und Datum, damit es altern darf, ohne zu lügen.
 
+## Sicherheit
+
+Die Angriffsflächen sind einzeln zugenagelt und einzeln getestet:
+
+- **HTML-Injection ins PDF**: Alle Werte werden vollständig entschärft —
+  auch Anführungszeichen, denn Werte landen in Attributen. Ein
+  Empfängername ist Text, nie Markup.
+- **Excel-Formel-Injection im Export**: Namen, die mit `=`, `+`, `-`
+  oder `@` beginnen, bekommen den Text-Apostroph — die CSV geht an die
+  Steuerberatung, deren Excel führt keine fremden Formeln aus.
+- **Pfad-Traversal beim Import**: Rechnungsnummern werden Dateinamen —
+  zulässig sind nur Buchstaben, Ziffern, Punkt, Binde- und Unterstrich.
+- **Register-Integrität**: Feldtrenner und Zeilenumbrüche in Werten
+  werden abgelehnt; die Hash-Kette deckt jede Zeile vollständig ab;
+  gleichzeitige Läufe sperrt `register.csv.lock` atomar.
+- **Beträge sind Zahlen**: Ein Preis, der keine Zahl ist, wird
+  abgelehnt — es gibt keine Rechnung über „NaN €".
+- **Keine Netzfläche**: kein Port, keine Telemetrie, keine externen
+  Ressourcen im PDF — siehe [DATENSCHUTZ.md](DATENSCHUTZ.md).
+
 ## Testen
 
 ```bash
