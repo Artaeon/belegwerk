@@ -15,11 +15,12 @@
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
-import { eintragen, pruefen, vertraeglich } from './lib/register.mjs';
+import { eintragen, pruefen, vertraeglich, sha } from './lib/register.mjs';
 import { lesen, setzen, pdf } from './lib/rechnung.mjs';
 import { seite, esc } from './lib/stil.mjs';
 import { naechste, luecken } from './lib/nummern.mjs';
 import { eur, datumLang, iso, parseBetrag, parseDatum, zielTage, tageZwischen } from './lib/geld.mjs';
+import { OK, FEHLT, HINWEIS, WARNUNG, gruen, orange, grau, fett } from './lib/farben.mjs';
 
 const [, , befehl, arg, arg2, arg3] = process.argv;
 
@@ -39,7 +40,7 @@ function firmaFinden(von) {
 function mandant(von = '.') {
   const fund = firmaFinden(von);
   if (!fund) {
-    console.error('✗ Keine firma.json gefunden — bin ich im Mandanten-Ordner? Zuerst: belegwerk init');
+    console.error(`${FEHLT} Keine firma.json gefunden — bin ich im Mandanten-Ordner? Zuerst: belegwerk init`);
     process.exit(1);
   }
   /* wurzel wandert in die firma: Logo-, Schrift- und Vorlagenpfade lösen
@@ -56,13 +57,13 @@ async function ausstellen(datei, m) {
   if (!r.muster) vertraeglich(m.register, r.nummer, r.datenhash);
   const pdf = datei.replace(/\.json$/, '.pdf');
   await setzen(r, m.firma, pdf);
-  console.log(`✓ ${pdf} — ${eur.format(r.brutto)} €${r.saetze.size ? ' brutto' : ''}`);
+  console.log(`${OK} ${pdf} — ${eur.format(r.brutto)} €${r.saetze.size ? ' brutto' : ''}`);
   if (r.muster) {
-    console.log('○ Muster — nicht ins Register eingetragen.');
+    console.log(`${HINWEIS} Muster — nicht ins Register eingetragen.`);
     return r;
   }
   const was = eintragen(m.register, { nummer: r.nummer, datum: r.datum, brutto: eur.format(r.brutto), datenhash: r.datenhash });
-  console.log(was === 'neu' ? `✓ Register: ${r.nummer} eingetragen.` : `○ ${r.nummer} steht bereits unverändert im Register — nur PDF neu gesetzt.`);
+  console.log(was === 'neu' ? `${OK} Register: ${r.nummer} eingetragen.` : `${HINWEIS} ${r.nummer} steht bereits unverändert im Register — nur PDF neu gesetzt.`);
   return r;
 }
 
@@ -95,7 +96,7 @@ function offene(m) {
   const eingetragen = new Set(registerZeilen(m).map((z) => z.nummer));
   return alleRechnungen(m.wurzel)
     .map((p) => ({ p, r: JSON.parse(readFileSync(p, 'utf8')) }))
-    .filter(({ r }) => eingetragen.has(r.nummer) && !r.muster && !r.storniert && !r.bezahltAm)
+    .filter(({ r }) => eingetragen.has(r.nummer) && !r.muster && !r.storniert && !r.bezahltAm && !r.altbestand)
     .map(({ p, r }) => {
       const brutto = registerZeilen(m).find((z) => z.nummer === r.nummer).brutto;
       return { p, r, brutto };
@@ -136,7 +137,7 @@ try {
     }, null, 2) + '\n');
     mkdirSync('rechnungen', { recursive: true });
     mkdirSync('wiederkehrend', { recursive: true });
-    console.log('✓ firma.json, rechnungen/ und wiederkehrend/ angelegt.\n  Firmendaten eintragen, dann: belegwerk rechnung rechnungen/RE-….json');
+    console.log(`${OK} firma.json, rechnungen/ und wiederkehrend/ angelegt.\n  Firmendaten eintragen, dann: belegwerk rechnung rechnungen/RE-….json`);
 
   } else if (befehl === 'pruefen') {
     const m = mandant();
@@ -144,12 +145,12 @@ try {
     if (anzahl === 0 && !fehler.length) {
       console.log('Kein Register vorhanden — noch keine Rechnung eingetragen.');
     } else {
-      fehler.forEach((f) => console.log(`✗ ${f}`));
+      fehler.forEach((f) => console.log(`${FEHLT} ${f}`));
       const warnungen = luecken(m.register);
-      warnungen.forEach((w) => console.log(`⚠ ${w}`));
+      warnungen.forEach((w) => console.log(`${WARNUNG} ${w}`));
       console.log(fehler.length
-        ? `✗ ${fehler.length} Fehler in ${anzahl} Einträgen.`
-        : `✓ Register in Ordnung — ${anzahl} Rechnungen, Kette geschlossen${warnungen.length ? `, aber ${warnungen.length} Nummernlücke(n)` : ', Nummernkreis dicht'}.`);
+        ? `${FEHLT} ${fehler.length} Fehler in ${anzahl} Einträgen.`
+        : `${OK} Register in Ordnung — ${anzahl} Rechnungen, Kette geschlossen${warnungen.length ? `, aber ${warnungen.length} Nummernlücke(n)` : ', Nummernkreis dicht'}.`);
       if (fehler.length) process.exit(1);
     }
 
@@ -165,6 +166,7 @@ try {
     const original = treffer.find(({ r }) => !r.storniert);
     if (!original) throw new Error(`${arg} ist bereits storniert (durch ${treffer[0].r.storniert}) — ein zweiter Storno wäre eine doppelte Gegenbuchung.`);
     if (original.r.muster) throw new Error('Ein Muster storniert man nicht — Datei einfach löschen.');
+    if (original.r.altbestand) throw new Error(`${arg} ist Altbestand — stornieren im System, das die Rechnung ausgestellt hat.`);
 
     const heute = new Date();
     const nummer = naechste(m.firma, m.register, heute.getFullYear());
@@ -186,7 +188,7 @@ try {
        eigene, negative Rechnung daneben. Die JSON bekommt nur die
        Querverbindung, damit ein zweiter Storno auffällt. */
     writeFileSync(original.p, JSON.stringify({ ...original.r, storniert: nummer }, null, 2) + '\n');
-    console.log(`✓ ${original.r.nummer} storniert durch ${nummer}.`);
+    console.log(`${OK} ${original.r.nummer} storniert durch ${nummer}.`);
 
   } else if (befehl === 'wiederkehrend') {
     const m = mandant();
@@ -206,7 +208,7 @@ try {
     for (const v of vorlagen) {
       const slug = v.replace(/\.json$/, '');
       const datei = join(ziel, `${monat}-${slug}.json`);
-      if (existsSync(datei)) { console.log(`○ ${slug} für ${monat} existiert schon — übersprungen.`); continue; }
+      if (existsSync(datei)) { console.log(`${HINWEIS} ${slug} für ${monat} existiert schon — übersprungen.`); continue; }
       const vorlage = JSON.parse(readFileSync(join(ordner, v), 'utf8'));
       /* Die erzeugten Werte gewinnen: Eine Vorlage, die eine eigene
          Nummer mitbringt, würde den Nummernkreis unterlaufen. */
@@ -220,7 +222,78 @@ try {
       await ausstellen(datei, m);
       erzeugt++;
     }
-    console.log(`✓ ${erzeugt} von ${vorlagen.length} Vorlagen für ${monatsname} ausgestellt.`);
+    console.log(`${OK} ${erzeugt} von ${vorlagen.length} Vorlagen für ${monatsname} ausgestellt.`);
+
+  } else if (befehl === 'export') {
+    /* Der Jahresexport für die Steuerberatung: eine CSV mit allem, was
+       das Register weiß, angereichert um Netto/USt/Status aus den
+       Rechnungs-JSONs. Altbestand (importiert, ohne JSON) steht mit
+       seinem Registerstand drin — lieber eine Zeile mit weniger Spalten
+       als eine unvollständige Liste. */
+    const m = mandant();
+    const jahr = arg ?? String(new Date().getFullYear());
+    const dateien = new Map(alleRechnungen(m.wurzel)
+      .map((p) => JSON.parse(readFileSync(p, 'utf8')))
+      .filter((r) => r.nummer)
+      .map((r) => [r.nummer, r]));
+    const zeilen = registerZeilen(m).filter((z) => {
+      try { return String(parseDatum(z.datum).getFullYear()) === String(jahr); } catch { return false; }
+    });
+    if (!zeilen.length) throw new Error(`Kein Registereintrag für ${jahr}.`);
+    let netto = 0, ust = 0, brutto = 0;
+    const inhalt = ['nummer;datum;empfaenger;netto;ust;brutto;status'];
+    for (const z of zeilen) {
+      const r = dateien.get(z.nummer);
+      const status = !r || r.altbestand ? 'altbestand' : r.storniert ? `storniert durch ${r.storniert}` : z.brutto < 0 ? 'storno' : r.bezahltAm ? `bezahlt ${r.bezahltAm}` : 'offen';
+      let n = '', u = '';
+      if (r?.positionen) {
+        const nettoWert = r.positionen.reduce((s, p) => s + p.preis * (p.menge ?? 1), 0);
+        n = eur.format(nettoWert);
+        u = eur.format(z.brutto - nettoWert);
+        netto += nettoWert;
+        ust += z.brutto - nettoWert;
+      }
+      brutto += z.brutto;
+      /* Altbestand trägt den Empfänger als Text, ausgestellte Rechnungen
+         als Objekt — der Export muss beide kennen. */
+      const empfName = typeof r?.empfaenger === 'string' ? r.empfaenger : r?.empfaenger?.name ?? '';
+      inhalt.push(`${z.nummer};${z.datum};${empfName.replaceAll(';', ',')};${n};${u};${eur.format(z.brutto)};${status}`);
+    }
+    inhalt.push(`SUMME;;;${eur.format(netto)};${eur.format(ust)};${eur.format(brutto)};${zeilen.length} Rechnungen`);
+    mkdirSync(join(m.wurzel, 'export'), { recursive: true });
+    const ziel = join(m.wurzel, 'export', `belegwerk-${jahr}.csv`);
+    writeFileSync(ziel, inhalt.join('\n') + '\n');
+    console.log(`${OK} ${ziel} — ${zeilen.length} Rechnungen, ${eur.format(brutto)} € brutto.`);
+
+  } else if (befehl === 'import' && arg) {
+    /* Altbestand übernehmen — der Umstieg von InvoiceNinja & Co. Die
+       alten Rechnungen bleiben im alten System archiviert; das Register
+       übernimmt Nummer, Datum, Empfänger und Brutto, damit Nummernkreis
+       und Vollständigkeit über den Werkzeugwechsel hinweg stimmen.
+       Erwartet CSV mit Kopfzeile: nummer;datum;empfaenger;brutto */
+    const m = mandant();
+    const zeilen = readFileSync(arg, 'utf8').trim().split('\n');
+    if (!/^nummer;datum;empfaenger;brutto$/i.test(zeilen[0]?.trim())) {
+      throw new Error('Erwartete Kopfzeile: nummer;datum;empfaenger;brutto — die erste Zeile muss sie wörtlich tragen.');
+    }
+    let neu = 0, unveraendert = 0;
+    mkdirSync(join(m.wurzel, 'rechnungen', 'altbestand'), { recursive: true });
+    for (const [i, z] of zeilen.slice(1).entries()) {
+      const [nummer, datum, empfaenger, bruttoRoh] = z.split(';').map((s) => s?.trim());
+      if (!nummer || !datum || !bruttoRoh) throw new Error(`Zeile ${i + 2} unvollständig: „${z}"`);
+      const brutto = eur.format(parseBetrag(bruttoRoh));
+      parseDatum(datum); /* laut scheitern statt still falsch übernehmen */
+      /* Der Posten bekommt eine eigene kleine JSON: Ohne sie wüsste der
+         Export den Empfänger nicht mehr — der Hash allein liest sich
+         nicht zurück. Der erste Export-Test hat genau das gezeigt. */
+      const posten = { altbestand: true, nummer, datum, empfaenger, brutto };
+      const datenhash = sha(JSON.stringify(posten));
+      const was = eintragen(m.register, { nummer, datum, brutto, datenhash });
+      writeFileSync(join(m.wurzel, 'rechnungen', 'altbestand', `${nummer}.json`), JSON.stringify(posten, null, 2) + '\n');
+      was === 'neu' ? neu++ : unveraendert++;
+    }
+    console.log(`${OK} Altbestand übernommen: ${neu} neu, ${unveraendert} bereits vorhanden.`);
+    console.log(`${HINWEIS} Die Originalbelege bleiben im alten System archiviert (BAO: 7 Jahre) — das Register kennt jetzt ihre Nummern.`);
 
   } else if (befehl === 'sichern') {
     /* Für Mandanten ohne Git: ein datiertes, vollständiges Archiv an
@@ -237,7 +310,7 @@ try {
     const probe = Bun.spawnSync(['tar', '-tzf', archiv]);
     const dateien = probe.stdout.toString().trim().split('\n');
     if (!dateien.some((d) => d.endsWith('firma.json'))) throw new Error('Archiv unvollständig — firma.json fehlt. Sicherung gelöscht wäre besser als eine falsche.');
-    console.log(`✓ ${archiv} — ${dateien.length} Dateien, geprüft (firma.json enthalten).`);
+    console.log(`${OK} ${archiv} — ${dateien.length} Dateien, geprüft (firma.json enthalten).`);
     console.log('  Eine Sicherung auf derselben Platte ist keine: Archiv auf ein zweites Medium oder ins Remote.');
 
   } else if (befehl === 'bezahlt' && arg) {
@@ -251,18 +324,18 @@ try {
     /* bezahltAm liegt außerhalb des Datenhashs — der Zahlungsvermerk
        ändert die ausgestellte Rechnung nicht, nur ihren Zustand. */
     writeFileSync(fund.p, JSON.stringify({ ...fund.r, bezahltAm: wann }, null, 2) + '\n');
-    console.log(`✓ ${arg} als bezahlt vermerkt (${wann}).`);
+    console.log(`${OK} ${arg} als bezahlt vermerkt (${wann}).`);
 
   } else if (befehl === 'offen') {
     const m = mandant();
     const liste = offene(m);
-    if (!liste.length) { console.log('✓ Keine offenen Forderungen.'); process.exit(0); }
+    if (!liste.length) { console.log(`${OK} Keine offenen Forderungen.`); process.exit(0); }
     let summe = 0;
     for (const o of liste) {
       summe += o.brutto;
       const stufe = o.r.mahnungen?.length ? ` · ${o.r.mahnungen.length}. Mahnung am ${o.r.mahnungen.at(-1)}` : '';
       const frist = o.verzug > 0 ? `überfällig seit ${o.verzug} Tagen` : `fällig in ${-o.verzug} Tagen`;
-      console.log(`${o.verzug > 0 ? '✗' : '·'} ${o.r.nummer}  ${eur.format(o.brutto).padStart(12)} €  ${o.r.empfaenger.name} — ${frist}${stufe}`);
+      console.log(`${o.verzug > 0 ? FEHLT : grau('·')} ${o.r.nummer}  ${eur.format(o.brutto).padStart(12)} €  ${o.r.empfaenger.name} — ${frist}${stufe}`);
     }
     console.log(`\n${liste.length} offen, zusammen ${eur.format(summe)} €. Vermerken mit: belegwerk bezahlt <nummer> [datum]`);
 
@@ -296,7 +369,7 @@ try {
     const pfad = o.p.replace(/\.json$/, `-mahnung-${stufe}.pdf`);
     await pdf(html, pfad);
     writeFileSync(o.p, JSON.stringify({ ...o.r, mahnungen: [...(o.r.mahnungen ?? []), iso(heute)] }, null, 2) + '\n');
-    console.log(`✓ ${pfad} — ${titel} über ${eur.format(o.brutto)} €, zahlbar bis ${datumLang(frist)}.`);
+    console.log(`${OK} ${pfad} — ${titel} über ${eur.format(o.brutto)} €, zahlbar bis ${datumLang(frist)}.`);
     console.log('  Versand bleibt Handarbeit — ein Automat mahnt nicht unbeaufsichtigt.');
 
   } else if (befehl === 'konto' && arg) {
@@ -304,14 +377,14 @@ try {
     const betrag = parseBetrag(arg);
     const wann = arg2 ? iso(parseDatum(arg2)) : iso(new Date());
     csvAnhaengen(join(m.wurzel, 'konto.csv'), 'datum;stand', `${wann};${eur.format(betrag)}`);
-    console.log(`✓ Kontostand ${eur.format(betrag)} € zum ${wann} festgehalten.`);
+    console.log(`${OK} Kontostand ${eur.format(betrag)} € zum ${wann} festgehalten.`);
 
   } else if (befehl === 'ausgabe' && arg && arg2) {
     const m = mandant();
     const betrag = parseBetrag(arg);
     csvAnhaengen(join(m.wurzel, 'ausgaben.csv'), 'datum;betrag;text;kategorie',
       `${iso(new Date())};${eur.format(betrag)};${arg2.replaceAll(';', ',')};${(arg3 ?? '').replaceAll(';', ',')}`);
-    console.log(`✓ Ausgabe ${eur.format(betrag)} € — ${arg2}${arg3 ? ` (${arg3})` : ''}.`);
+    console.log(`${OK} Ausgabe ${eur.format(betrag)} € — ${arg2}${arg3 ? ` (${arg3})` : ''}.`);
 
   } else if (befehl === 'stand') {
     const m = mandant();
@@ -342,7 +415,7 @@ try {
     console.log('\nDie Übersicht ist eine Arbeitshilfe, keine Buchhaltung — was zählt, sind Register und Belege.');
 
   } else {
-    console.log(`belegwerk — Dateien. Belege. Nachweis.
+    console.log(`${fett('belegwerk')} — ${orange('Dateien. Belege. Nachweis.')}
 Rechnung und Register für kleine Unternehmen.
 
   belegwerk init                     Mandanten-Ordner anlegen (firma.json)
@@ -355,6 +428,8 @@ Rechnung und Register für kleine Unternehmen.
   belegwerk konto <betrag> [datum]   Kontostand manuell festhalten
   belegwerk ausgabe <betrag> <text> [kategorie]   Ausgabe notieren
   belegwerk stand                    Überblick: Konto, offen, Jahr, Ziele
+  belegwerk export [jahr]            Jahres-CSV für die Steuerberatung
+  belegwerk import <datei.csv>       Altbestand ins Register übernehmen
   belegwerk sichern [zielordner]     Datiertes Archiv des Mandanten (tar.gz)
   belegwerk pruefen                  Registerkette + Nummernkreis verifizieren
 
@@ -364,6 +439,6 @@ Branding: vorlage/stil.css, vorlage/kopf.html, vorlage/fuss.html — dazu
 logoPfad, schriftPfad und stil in firma.json. Siehe README.`);
   }
 } catch (e) {
-  console.error(`✗ ${e.message}`);
+  console.error(`${FEHLT} ${e.message}`);
   process.exit(1);
 }

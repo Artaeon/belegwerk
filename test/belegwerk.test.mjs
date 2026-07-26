@@ -62,6 +62,14 @@ describe('nummern', () => {
     expect(naechste(firma, reg, 2027)).toBe('RE-2027-001');
   });
 
+  test('nummern.start verschiebt den Beginn — bis das Register übernimmt', () => {
+    const reg3 = join(dir, 'register3.csv');
+    const mitStart = { nummern: { muster: 'RE-{jahr}-{nr}', breite: 3, start: 100 } };
+    expect(naechste(mitStart, reg3, 2026)).toBe('RE-2026-100');
+    writeFileSync(reg3, 'nummer;datum;brutto;datenhash;kettenhash\nRE-2026-100;x;x;h;k\n');
+    expect(naechste(mitStart, reg3, 2026)).toBe('RE-2026-101');
+  });
+
   test('findet Lücken, meldet dichte Kreise nicht', () => {
     writeFileSync(reg, 'nummer;datum;brutto;datenhash;kettenhash\nRE-2026-001;x;x;h;k\nRE-2026-002;x;x;h;k\nRE-2026-004;x;x;h;k\n');
     const w = luecken(reg);
@@ -512,6 +520,88 @@ describe('CLI End-to-End', () => {
     const r = lauf('unfug');
     expect(r.code).toBe(0);
     expect(r.out).toContain('Dateien. Belege. Nachweis.');
+  });
+});
+
+/* ══ Import, Export, Nummernstart — der Umstieg vom alten System ═════ */
+
+describe('Import, Export und Nummernstart', () => {
+  let M;
+  const lauf = (...args) => {
+    const p = Bun.spawnSync(['bun', CLI, ...args], { cwd: M });
+    return { code: p.exitCode, out: p.stdout.toString() + p.stderr.toString() };
+  };
+
+  beforeAll(() => {
+    M = mkdtempSync(join(tmpdir(), 'belegwerk-umstieg-'));
+    lauf('init');
+    const firma = JSON.parse(readFileSync(join(M, 'firma.json'), 'utf8'));
+    firma.name = 'Umstieg OG';
+    firma.uid = 'ATU77777777';
+    firma.nummern = { muster: 'RE-{jahr}-{nr}', breite: 3, start: 100 };
+    writeFileSync(join(M, 'firma.json'), JSON.stringify(firma, null, 2));
+    writeFileSync(join(M, 'altbestand.csv'),
+      'nummer;datum;empfaenger;brutto\n' +
+      'RE-2026-098;2026-03-01;Alt-Kunde A;1.200,00\n' +
+      'RE-2026-099;2026-04-01;Alt-Kunde B;480,00\n');
+  });
+  afterAll(() => rmSync(M, { recursive: true, force: true }));
+
+  test('import: Altbestand landet im Register, idempotent', () => {
+    let r = lauf('import', 'altbestand.csv');
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('2 neu');
+    r = lauf('import', 'altbestand.csv');
+    expect(r.out).toContain('2 bereits vorhanden');
+    expect(lauf('pruefen').code).toBe(0);
+  });
+
+  test('Altbestand ist kein offener Posten und nicht hier stornierbar', () => {
+    expect(lauf('offen').out).not.toContain('RE-2026-098');
+    const r = lauf('storno', 'RE-2026-098');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('Altbestand');
+  });
+
+  test('import: falsche Kopfzeile verweigert, geänderte Altdaten verweigert', () => {
+    writeFileSync(join(M, 'kaputt.csv'), 'rechnung,datum\nx,y\n');
+    expect(lauf('import', 'kaputt.csv').code).toBe(1);
+    writeFileSync(join(M, 'konflikt.csv'),
+      'nummer;datum;empfaenger;brutto\nRE-2026-098;2026-03-01;Alt-Kunde A;9.999,00\n');
+    const r = lauf('import', 'konflikt.csv');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('stornieren');
+  });
+
+  test('nummern.start: die erste neue Rechnung schließt an den Altbestand an', () => {
+    const pfad = join(M, 'rechnungen', 'neu.json');
+    writeFileSync(join(M, 'wiederkehrend/betrieb.json'), JSON.stringify({
+      empfaenger: { name: 'Gemeinde Z', adresse: 'Platz 3, 4020 Ort' },
+      positionen: [{ text: 'Betrieb', preis: 40 }],
+    }));
+    const r = lauf('wiederkehrend', '2026-07');
+    expect(r.code).toBe(0);
+    expect(readFileSync(join(M, 'register.csv'), 'utf8')).toContain('RE-2026-100');
+    expect(lauf('pruefen').out).toContain('Nummernkreis dicht');
+  }, 30_000);
+
+  test('export: Jahres-CSV mit Netto, USt, Status und Summenzeile', () => {
+    const r = lauf('export', '2026');
+    expect(r.code).toBe(0);
+    const csv = readFileSync(join(M, 'export', 'belegwerk-2026.csv'), 'utf8');
+    expect(csv).toContain('RE-2026-098;2026-03-01;Alt-Kunde A;;;1.200,00;altbestand');
+    expect(csv).toContain('RE-2026-100');
+    expect(csv).toContain(';offen');
+    expect(csv).toContain('SUMME;;;40,00;8,00;1.728,00;3 Rechnungen');
+  });
+
+  test('export: leeres Jahr verweigert', () => {
+    expect(lauf('export', '1999').code).toBe(1);
+  });
+
+  test('ohne TTY keine Escape-Sequenzen — Cron-Mails bleiben Text', () => {
+    const r = lauf('pruefen');
+    expect(r.out).not.toContain('\x1b[');
   });
 });
 
