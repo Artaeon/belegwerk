@@ -207,6 +207,15 @@ Die Angriffsflächen sind einzeln zugenagelt und einzeln getestet:
 - **Keine Netzfläche**: kein Port, keine Telemetrie, keine externen
   Ressourcen im PDF — siehe [DATENSCHUTZ.md](DATENSCHUTZ.md).
 
+## Ansehen statt glauben
+
+`bun scripts/schaukasten.mjs` baut `schaukasten/` neu auf: ein
+vollständiger Demo-Mandant mit jedem Rechnungstyp (normal, gemischte
+Steuersätze, Reverse Charge, ig Lieferung, Kleinunternehmer), Storno,
+zwei Mahnstufen, Altbestand-Import, Jahresexport, Überblick, geprüftem
+Register und Sicherung. Alles erzeugt, nichts von Hand — der Ordner ist
+das Ergebnis, das man durchblättern kann.
+
 ## Testen
 
 ```bash
