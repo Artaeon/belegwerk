@@ -1,0 +1,11 @@
+[Unit]
+Description=kontor: am Monatsersten die wiederkehrenden Rechnungen ausstellen
+
+[Timer]
+OnCalendar=*-*-01 06:00
+# Persistent: Wenn der Server am Monatsersten aus war, wird der Lauf
+# nachgeholt, statt still auszufallen. Der Lauf selbst ist idempotent.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -13,7 +13,7 @@ Status: ✓ erfüllt und erzwungen · ● teilweise · ✗ offen · — keine Pf
 | Merkmal | Status | Anmerkung |
 |---|---|---|
 | Name/Anschrift Aussteller und Empfänger | ✓ | Pflichtfelder, sonst bricht das Werkzeug |
-| Fortlaufende Nummer | ● | Eindeutigkeit erzwingt das Register; eine **Lückenprüfung** fehlt noch — `pruefen` findet Doppel, aber keine ausgelassene Nummer |
+| Fortlaufende Nummer | ✓ | Nummernkreis aus firma.json, vergeben aus dem Register (kein zweiter Zähler); `pruefen` findet Doppel UND Lücken |
 | Ausstellungsdatum | ✓ | Pflichtfeld |
 | Menge und Bezeichnung der Leistung | ✓ | Positionen mit Text, Menge, Einheit |
 | Tag/Zeitraum der Leistung | ✓ | Pflichtfeld `leistungszeitraum` |
@@ -24,12 +24,14 @@ Status: ✓ erfüllt und erzwungen · ● teilweise · ✗ offen · — keine Pf
 | Kleinunternehmer-Hinweis (§ 6 Abs 1 Z 27) | ✓ | gesetzt, USt entfällt; Umsatzgrenze (55.000 € seit 2025 — **beim Steuerberater bestätigen**) überwacht kontor **nicht** |
 | Kleinbetragsrechnung ≤ 400 € | — | Erleichterung, keine Pflicht; kontor stellt immer vollständig aus |
 
-**✗ Nicht abgedeckt — Sonderfälle mit Hinweispflicht:** Übergang der
-Steuerschuld (Reverse Charge, § 19), steuerfreie innergemeinschaftliche
-Lieferung, Differenzbesteuerung. kontor kennt diese Fälle nicht und
-**warnt auch nicht** — wer solche Umsätze hat, darf kontor dafür derzeit
-nicht verwenden. Für den Stoicera-Anwendungsfall (Inland, B2B/Gemeinden)
-heute nicht relevant, aber der erste EU-Auslandskunde ändert das.
+**● Sonderfälle mit Hinweispflicht:** Reverse Charge (§ 19) und die
+steuerfreie innergemeinschaftliche Lieferung sind abgedeckt —
+`steuerregel` auf der Rechnung, Pflicht-UIDs erzwungen, der
+vorgeschriebene Hinweis steht auf der Rechnung. Alles Weitere
+(Differenzbesteuerung, Dreiecksgeschäft, …) **lehnt kontor ausdrücklich
+ab**, statt eine Rechnung ohne den nötigen Hinweis auszustellen.
+**Storno** ist abgedeckt: eigene Nummer, negierte Beträge, Original
+bleibt unangetastet, doppelter Storno wird verweigert.
 
 ## 2. Echtheit und Unversehrtheit (§ 11 Abs 2 UStG)
 
@@ -71,8 +73,8 @@ Manipulationsschutz per Zertifikat) — bewusst außerhalb des Produkts.
 
 Keine Rechtspflichten, aber der ehrliche Produktvergleich:
 
-- Storno/Gutschrift als Befehl (rechtlich sauber möglich, fehlt als Feature)
-- Wiederkehrende Rechnungen — der monatliche Betrieb ist genau dieser Fall
+- ~~Storno/Gutschrift~~ → `kontor storno`, seit v0.2
+- ~~Wiederkehrende Rechnungen~~ → `kontor wiederkehrend` + Server-Timer, seit v0.2
 - Zahlungsstatus (offen/bezahlt) und Mahnwesen
 - UVA-Zuarbeit (Kennzahlen je Quartal) und Export für die Steuerberatung (BMD)
 - Kundenportal, Online-Zahlung
