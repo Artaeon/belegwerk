@@ -1,0 +1,10 @@
+{
+  "name": "Beispiel & Partner OG",
+  "adresse": "Hauptplatz 1, 4020 Linz",
+  "uid": "ATU12345678",
+  "iban": "AT00 0000 0000 0000 0000",
+  "email": "office@beispiel.example",
+  "web": "beispiel.example",
+  "kleinunternehmer": false,
+  "stil": { "primaer": "#0B1F3A", "akzent": "#2558E8" }
+}

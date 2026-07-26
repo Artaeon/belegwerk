@@ -1,0 +1,31 @@
+{
+  "muster": true,
+  "nummer": "RE-2026-000",
+  "datum": "28. Juli 2026",
+  "empfaenger": {
+    "name": "Musterkunde GmbH",
+    "adresse": "Beispielgasse 2, 1010 Wien",
+    "uid": "ATU87654321"
+  },
+  "leistungszeitraum": "Juli 2026",
+  "referenz": "Angebot A-2026-014 vom 1. Juli 2026",
+  "positionen": [
+    {
+      "text": "Website-Relaunch — Schlussrechnung nach Abnahme",
+      "beschreibung": "50 % laut Werkvertrag; Abnahmeprotokoll vom 25. Juli 2026",
+      "menge": 1,
+      "einheit": "pauschal",
+      "preis": 8400
+    },
+    {
+      "text": "Fachbuch zur Einschulung",
+      "beschreibung": "ermäßigter Steuersatz",
+      "menge": 2,
+      "einheit": "Stück",
+      "preis": 39,
+      "ustSatz": 10
+    }
+  ],
+  "zahlung": { "ziel": "14 Tagen ab Rechnungsdatum" },
+  "hinweis": "Musterdatei von kontor — zeigt auch gemischte Steuersätze (20 % und 10 %)."
+}
