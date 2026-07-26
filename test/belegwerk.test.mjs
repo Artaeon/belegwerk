@@ -13,7 +13,7 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
-import { parseBetrag, parseDatum, zielTage } from '../src/lib/geld.mjs';
+import { parseBetrag, parseDatum, zielTage, eur, datumLang, monatLang } from '../src/lib/geld.mjs';
 import { naechste, luecken } from '../src/lib/nummern.mjs';
 import { eintragen, pruefen, vertraeglich } from '../src/lib/register.mjs';
 import { lesen, htmlRechnung } from '../src/lib/rechnung.mjs';
@@ -21,6 +21,29 @@ import { lesen, htmlRechnung } from '../src/lib/rechnung.mjs';
 const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'belegwerk.mjs');
 
 /* ══ geld.mjs — Parser ═══════════════════════════════════════════════ */
+
+describe('geld: deterministische Formatierung — auf jeder Maschine gleich', () => {
+  /* Der CI-Vorfall dahinter: Intl formatierte de-AT auf dem Linux-Runner
+     mit schmalem geschütztem Leerzeichen statt Punkt — neun Tests fielen,
+     die lokal grün waren. Ein Register darf nicht von der ICU-Version
+     abhängen; diese Kanarien halten das fest. */
+  test('Tausenderpunkt, Komma, zwei Dezimalen', () => {
+    expect(eur.format(1234567.891)).toBe('1.234.567,89');
+    expect(eur.format(1200)).toBe('1.200,00');
+    expect(eur.format(-48)).toBe('-48,00');
+    expect(eur.format(0)).toBe('0,00');
+  });
+  test('kein NaN durch die Hintertür', () => expect(() => eur.format(NaN)).toThrow('keine Zahl'));
+  test('deutsche Datums-Langform ohne Intl', () => {
+    expect(datumLang(new Date(2026, 0, 1))).toBe('1. Jänner 2026');
+    expect(datumLang(new Date(2026, 6, 27))).toBe('27. Juli 2026');
+    expect(monatLang(2026, 8)).toBe('August 2026');
+  });
+  test('parseBetrag liest auch Leerzeichen-Gruppierung (alte Intl-Register)', () => {
+    expect(parseBetrag('1 200,00')).toBe(1200);
+    expect(parseBetrag('1 200,00')).toBe(1200);
+  });
+});
 
 describe('geld: parseBetrag', () => {
   test('deutsches Format mit Tausenderpunkt', () => expect(parseBetrag('5.088,00')).toBe(5088));

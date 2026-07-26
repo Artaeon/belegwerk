@@ -20,7 +20,7 @@ import { eintragen, pruefen, vertraeglich, sha } from './lib/register.mjs';
 import { lesen, setzen, pdf } from './lib/rechnung.mjs';
 import { seite, esc } from './lib/stil.mjs';
 import { naechste, luecken } from './lib/nummern.mjs';
-import { eur, datumLang, iso, parseBetrag, parseDatum, zielTage, tageZwischen } from './lib/geld.mjs';
+import { eur, datumLang, monatLang, iso, parseBetrag, parseDatum, zielTage, tageZwischen } from './lib/geld.mjs';
 import { OK, FEHLT, HINWEIS, WARNUNG, gruen, orange, grau, fett } from './lib/farben.mjs';
 
 const [, , befehl, arg, arg2, arg3] = process.argv;
@@ -198,7 +198,7 @@ try {
       nummer: naechste({ nummern: { muster: 'RE-{jahr}-{nr}', breite: 3, start } }, 'register.csv', heute.getFullYear()),
       datum: datumLang(heute),
       empfaenger: { name: 'Musterkunde GmbH', adresse: 'Beispielgasse 2, 1010 Wien' },
-      leistungszeitraum: new Intl.DateTimeFormat('de-AT', { month: 'long', year: 'numeric' }).format(heute),
+      leistungszeitraum: monatLang(heute.getFullYear(), heute.getMonth() + 1),
       positionen: [{ text: 'Meine erste Leistung', beschreibung: 'Muster — Datei kopieren, anpassen, umbenennen', preis: 100 }],
     }, null, 2) + '\n');
     await ausstellen(musterDatei, mandant('.'));
@@ -267,7 +267,7 @@ try {
     const monat = arg ?? `${heute.getFullYear()}-${String(heute.getMonth() + 1).padStart(2, '0')}`;
     if (!/^\d{4}-\d{2}$/.test(monat)) throw new Error(`„${monat}" ist kein Monat — erwartet JJJJ-MM.`);
     const [jahr, mm] = monat.split('-').map(Number);
-    const monatsname = new Intl.DateTimeFormat('de-AT', { month: 'long', year: 'numeric' }).format(new Date(jahr, mm - 1, 1));
+    const monatsname = monatLang(jahr, mm);
 
     const ordner = join(m.wurzel, 'wiederkehrend');
     const vorlagen = existsSync(ordner) ? readdirSync(ordner).filter((f) => f.endsWith('.json')) : [];

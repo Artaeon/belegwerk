@@ -13,7 +13,7 @@ import { basename } from 'node:path';
 import { esc, seite } from './stil.mjs';
 import { sha } from './register.mjs';
 
-const eur = new Intl.NumberFormat('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+import { eur } from './geld.mjs';
 const rund = (n) => Math.round(n * 100) / 100;
 
 /** Liest und validiert eine Rechnungs-JSON. Wirft mit einer Liste

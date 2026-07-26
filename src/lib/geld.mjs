@@ -6,16 +6,36 @@
  * rechnen will, muss beides zurücklesen können — und zwar überall
  * gleich, nicht mit drei verschiedenen Parsern.
  */
-export const eur = new Intl.NumberFormat('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/* BEWUSST NICHT Intl: Was ins Register geschrieben wird, muss auf jeder
+   Maschine Byte für Byte gleich aussehen. Intl hängt an der ICU/CLDR-
+   Version der Umgebung — neuere CLDR gruppiert de-AT-Tausender mit
+   schmalem geschütztem Leerzeichen („1 200,00") statt Punkt. Genau so
+   sind in CI neun Tests gefallen, die lokal grün waren: Der Runner
+   schrieb andere Beträge ins Register als der Mac. Ein Register, dessen
+   Inhalt von der ICU-Version abhängt, ist keines. */
+export const eur = {
+  format(n) {
+    if (!Number.isFinite(n)) throw new Error(`eur.format: „${n}" ist keine Zahl.`);
+    const negativ = n < 0;
+    const [ganz, dezimal] = Math.abs(n).toFixed(2).split('.');
+    return `${negativ ? '-' : ''}${ganz.replace(/\B(?=(\d{3})+(?!\d))/g, '.')},${dezimal}`;
+  },
+};
 
-export const datumLang = (d) =>
-  new Intl.DateTimeFormat('de-AT', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+export const MONATSNAMEN = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+
+export const datumLang = (d) => `${d.getDate()}. ${MONATSNAMEN[d.getMonth()]} ${d.getFullYear()}`;
+
+export const monatLang = (jahr, monat1bis12) => `${MONATSNAMEN[monat1bis12 - 1]} ${jahr}`;
 
 export const iso = (d) => d.toISOString().slice(0, 10);
 
-/** „5.088,00" → 5088 · „129,90" → 129.9 · „42" → 42 · auch "-48,00". */
+/** „5.088,00" → 5088 · „129,90" → 129.9 · „42" → 42 · auch "-48,00".
+ *  Nimmt auch Leerzeichen-Gruppierungen an (inkl. schmalem geschütztem
+ *  Leerzeichen) — falls je ein Register von einem älteren, Intl-basierten
+ *  Stand gelesen wird. */
 export function parseBetrag(s) {
-  const n = Number(String(s).trim().replace(/\./g, '').replace(',', '.'));
+  const n = Number(String(s).trim().replace(/[.\s  ]/g, '').replace(',', '.'));
   if (!Number.isFinite(n)) throw new Error(`„${s}" ist kein Betrag.`);
   return n;
 }
