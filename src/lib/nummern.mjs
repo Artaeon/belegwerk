@@ -7,22 +7,26 @@
  */
 import { readFileSync, existsSync } from 'node:fs';
 
-const MUSTER_STANDARD = { muster: 'RE-{jahr}-{nr}', breite: 3 };
+const MUSTER_STANDARD = { muster: 'RE-{jahr}-{nr}', breite: 3, start: 1 };
 
 const registerNummern = (pfad) =>
   existsSync(pfad)
     ? readFileSync(pfad, 'utf8').trim().split('\n').slice(1).map((z) => z.split(';')[0])
     : [];
 
-/** Die nächste freie Nummer für ein Jahr. */
+/** Die nächste freie Nummer für ein Jahr. `start` verschiebt den
+ *  Beginn des Kreises — wer bei 100 anfangen will (etwa damit die
+ *  erste Rechnung nicht als erste erkennbar ist, oder um einen
+ *  Altbestand unterhalb freizuhalten), setzt nummern.start: 100.
+ *  Sobald Nummern vergeben sind, zählt wieder allein das Register. */
 export function naechste(firma, registerPfad, jahr) {
-  const { muster, breite } = { ...MUSTER_STANDARD, ...firma.nummern };
+  const { muster, breite, start } = { ...MUSTER_STANDARD, ...firma.nummern };
   const prefix = muster.replace('{jahr}', jahr).split('{nr}')[0];
   const hoechste = registerNummern(registerPfad)
     .filter((n) => n.startsWith(prefix))
     .map((n) => parseInt(n.slice(prefix.length), 10))
     .filter(Number.isFinite)
-    .reduce((a, b) => Math.max(a, b), 0);
+    .reduce((a, b) => Math.max(a, b), start - 1);
   return muster.replace('{jahr}', jahr).replace('{nr}', String(hoechste + 1).padStart(breite, '0'));
 }
 
