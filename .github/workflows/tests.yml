@@ -15,4 +15,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
+      # Bun führt Postinstall-Skripte nicht ungefragt aus — Puppeteers
+      # Chrome-Download läuft deshalb hier ausdrücklich. Ohne Browser
+      # schlagen alle PDF-Tests fehl; genau so sah der erste CI-Lauf aus.
+      - run: bunx puppeteer browsers install chrome
       - run: bun test
