@@ -1,6 +1,6 @@
 # Testbericht
 
-**Stand: 26. Juli 2026 · Version 0.11.0 · 88 Tests, 228 Assertions, 0 Fehler.**
+**Stand: 27. Juli 2026 · Version 0.11.2 · 92 Tests, 238 Assertions, 0 Fehler — lokal und in GitHub Actions (ubuntu-latest).**
 Dieser Bericht ist ein datierter Schnappschuss — die lebende Wahrheit ist
 `bun test`; drift dieser Bericht, gewinnt die Suite.
 
@@ -8,7 +8,7 @@ Dieser Bericht ist ein datierter Schnappschuss — die lebende Wahrheit ist
 
 | Lauf | Ergebnis |
 |---|---|
-| `bun test` | 88 / 88 grün, 228 Assertions, ~35 s |
+| `bun test` | 92 / 92 grün, 238 Assertions, ~35 s lokal, ~48 s in CI |
 | `bun test --coverage` | Bibliotheken 97,2 % Zeilen; nummern/register/stil 100 % |
 | `bun run beispiel` | Muster-PDF gesetzt, kein Registereintrag |
 | `bun scripts/schaukasten.mjs` | vollständiger Demo-Mandant, Register „Kette geschlossen, Nummernkreis dicht" |
@@ -56,6 +56,12 @@ server-einrichten.sh syntaxgeprüft.
 vorlage/-Überschreibungen (CSS, Kopf, Fuß, Platzhalter) bis ins
 Dokument · kein belegwerk-Logo auf Mandanten-Dokumenten · Generator
 deterministisch.
+
+**Umgebung:** Beträge und deutsche Datumsnamen formatiert eigener,
+deterministischer Code — bewusst ohne Intl, nachdem die ICU des
+CI-Runners de-AT anders gruppierte als macOS und neun Tests nur dort
+fielen. Vier Kanarien halten das Format fest; die CI beweist es seither
+auf jedem Push mit.
 
 ## Ehrliche Grenzen
 
